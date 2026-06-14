@@ -1,0 +1,30 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-outline);
+  border-radius: 12px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  max-width: 300px;
+}
+
+.title {
+  font-size: var(--typography-title-medium-font-size, 18px);
+  color: var(--color-on-surface-variant);
+  margin: 0;
+}
+
+.description {
+  font-size: var(--typography-body-medium-font-size, 14px);
+  color: var(--color-on-surface-variant);
+  margin: 0;
+}

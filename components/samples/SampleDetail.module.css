@@ -1,0 +1,130 @@
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .mainCol {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .sideCol {
+    width: 300px;
+    position: sticky;
+    top: 88px;
+  }
+}
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.sectionTitle {
+  font-size: var(--typography-title-medium-font-size, 18px);
+  margin: 0 0 16px 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row dt {
+  font-size: var(--typography-label-medium-font-size, 12px);
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+}
+
+.row dd {
+  margin: 0;
+  font-size: var(--typography-body-large-font-size, 16px);
+  font-weight: 500;
+}
+
+@media (min-width: 768px) {
+  .row {
+    flex-direction: row;
+    align-items: baseline;
+  }
+  .row dt {
+    width: 150px;
+    flex-shrink: 0;
+  }
+}
+
+.childrenSection {
+  margin-top: 0;
+}
+
+.childItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+.childItem:last-child {
+  border-bottom: none;
+}
+
+.childCheckbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.childLabel {
+  font-weight: 500;
+  color: var(--color-on-surface);
+  text-decoration: none;
+}
+.childLabel:hover {
+  color: var(--color-primary);
+}
+
+.batchActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-outline-variant);
+}
+
+.batchInput {
+  flex: 1;
+  min-width: 120px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-outline);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  font-size: var(--typography-body-large-font-size, 16px);
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+.batchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}

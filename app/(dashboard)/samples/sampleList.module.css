@@ -1,0 +1,76 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title {
+  font-size: var(--typography-headline-medium-font-size, 28px);
+  margin: 0;
+  color: var(--color-on-background);
+}
+
+.subtitle {
+  font-size: var(--typography-body-medium-font-size, 14px);
+  color: var(--color-on-surface-variant);
+  margin: 8px 0 0 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.addBtnDesktopWrapper {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .addBtnDesktopWrapper {
+    display: none;
+  }
+}
+
+.addBtnMobile {
+  display: none;
+  background-color: var(--color-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  color: var(--color-on-primary);
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.addBtnMobile:hover {
+  opacity: 0.9;
+}
+
+.addBtnMobile:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+@media (max-width: 767px) {
+  .addBtnMobile {
+    display: inline-flex;
+  }
+}

@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Lab {
+  id             String    @id @default(cuid())
+  name           String
+  institution    String?
+  researchFields Json      @default("[]") @map("research_fields")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  users          User[]
+  samples        Sample[]
+
+  @@map("labs")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  role          Role      @default(STUDENT)
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastLogin     DateTime? @map("last_login")
+  lab           Lab       @relation(fields: [labId], references: [id])
+  labId         String    @map("lab_id")
+  samplesCreated Sample[] @relation("CreatedBy")
+  auditLogs           AuditLog[]
+  emailVerified       DateTime? @map("email_verified")
+  onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
+
+  // Back-relations for new expanded models
+  phaseHistoriesUpdated      SamplePhaseHistory[]
+  treatmentLogsAdministered  TreatmentLog[]
+  observationLogsObserved    ObservationLog[]
+  analysisRecordsPerformed   AnalysisRecord[]
+  sampleImagesUploaded       SampleImage[]
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  usedAt    DateTime? @map("used_at")
+
+  @@map("password_reset_tokens")
+}
+
+model VerificationToken {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  usedAt    DateTime? @map("used_at")
+
+  @@map("verification_tokens")
+}
+
+model Sample {
+  id              String        @id @default(cuid())
+  slug            String        @unique  // human-readable, e.g. "tumour-mtu001"
+  humanId         String        @map("human_id") // display ID, e.g. "MTU001"
+  qrCodeUrl       String?       @map("qr_code_url") // goQR image URL
+  sampleType      String        @map("sample_type")
+  source          String
+  collectionDate  DateTime      @map("collection_date")
+  description     String?
+  experimentType  String?       @map("experiment_type")
+  currentPhase    String?       @map("current_phase")
+  
+  // Keep JSON fields for backward compatibility and offline caching
+  phaseHistory    Json          @default("[]") @map("phase_history")
+  images          Json          @default("[]")
+
+  // Parent-child relationships (tissues to mice)
+  parentSampleId  String?       @map("parent_sample_id")
+  parentSample    Sample?       @relation("SampleParent", fields: [parentSampleId], references: [id])
+  childSamples    Sample[]      @relation("SampleParent")
+
+  // Metadata
+  group           Group?
+  sex             Sex?
+  age             Int?
+
+  // Relations to logging tables
+  phaseHistories  SamplePhaseHistory[]
+  treatmentLogs   TreatmentLog[]
+  observationLogs ObservationLog[]
+  analysisRecords AnalysisRecord[]
+  sampleImages    SampleImage[]
+
+  createdBy       User          @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById     String        @map("created_by_id")
+  lab             Lab           @relation(fields: [labId], references: [id])
+  labId           String        @map("lab_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  isDeleted       Boolean       @default(false) @map("is_deleted")
+  deletedAt       DateTime?     @map("deleted_at")
+  deletedById     String?       @map("deleted_by_id")
+  auditLogs       AuditLog[]
+
+  @@unique([humanId, labId])
+  @@map("samples")
+}
+
+model SamplePhaseHistory {
+  id          String    @id @default(cuid())
+  sampleId    String    @map("sample_id")
+  sample      Sample    @relation(fields: [sampleId], references: [id], onDelete: Restrict)
+  phase       PhaseType
+  notes       String?
+  updatedById String    @map("updated_by_id")
+  updatedBy   User      @relation(fields: [updatedById], references: [id])
+  timestamp   DateTime  @default(now())
+
+  @@map("sample_phase_histories")
+}
+
+model TreatmentLog {
+  id               String   @id @default(cuid())
+  sampleId         String   @map("sample_id")
+  sample           Sample   @relation(fields: [sampleId], references: [id], onDelete: Restrict)
+  treatmentType    String   @map("treatment_type")
+  dose             String
+  route            String
+  frequency        String
+  administeredById String   @map("administered_by_id")
+  administeredBy   User     @relation(fields: [administeredById], references: [id])
+  administeredAt   DateTime @default(now()) @map("administered_at")
+  notes            String?
+
+  @@map("treatment_logs")
+}
+
+model ObservationLog {
+  id            String   @id @default(cuid())
+  sampleId      String   @map("sample_id")
+  sample        Sample   @relation(fields: [sampleId], references: [id], onDelete: Restrict)
+  tumorPresent  Boolean  @map("tumor_present")
+  tumorSizeMm   Float?   @map("tumor_size_mm")
+  bodyWeight    Float?   @map("body_weight")
+  condition     String?
+  observedById  String   @map("observed_by_id")
+  observedBy    User     @relation(fields: [observedById], references: [id])
+  observedAt    DateTime @default(now()) @map("observed_at")
+  notes         String?
+
+  @@map("observation_logs")
+}
+
+model AnalysisRecord {
+  id             String       @id @default(cuid())
+  sampleId       String       @map("sample_id")
+  sample         Sample       @relation(fields: [sampleId], references: [id], onDelete: Restrict)
+  analysisType   AnalysisType @map("analysis_type")
+  resultSummary  String?      @map("result_summary")
+  performedById  String       @map("performed_by_id")
+  performedBy    User         @relation(fields: [performedById], references: [id])
+  performedAt    DateTime     @default(now()) @map("performed_at")
+
+  @@map("analysis_records")
+}
+
+model SampleImage {
+  id           String    @id @default(cuid())
+  sampleId     String    @map("sample_id")
+  sample       Sample    @relation(fields: [sampleId], references: [id], onDelete: Restrict)
+  imageUrl     String    @map("image_url")
+  imageType    ImageType @map("image_type")
+  uploadedById String    @map("uploaded_by_id")
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime  @default(now()) @map("uploaded_at")
+
+  @@map("sample_images")
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  actionType   ActionType  @map("action_type")
+  fieldChanged String?     @map("field_changed")
+  oldValue     String?     @map("old_value")
+  newValue     String?     @map("new_value")
+  ipAddress    String?     @map("ip_address")
+  timestamp    DateTime    @default(now())
+  user         User        @relation(fields: [userId], references: [id])
+  userId       String      @map("user_id")
+  sample       Sample?     @relation(fields: [sampleId], references: [id])
+  sampleId     String?     @map("sample_id")
+
+  @@map("audit_logs")
+}
+
+enum Role {
+  ADMIN
+  RESEARCHER
+  STUDENT
+  VIEWER
+  PI
+}
+
+enum ActionType {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  PHASE_CHANGE
+  IMAGE_ATTACH
+}
+
+
+enum Group {
+  CONTROL   @map("control")
+  NMU       @map("nmu")
+  TREATMENT @map("treatment")
+}
+
+enum Sex {
+  MALE   @map("male")
+  FEMALE @map("female")
+}
+
+enum PhaseType {
+  COLLECTION        @map("collection")
+  INDUCTION         @map("induction")
+  MONITORING        @map("monitoring")
+  TREATMENT         @map("treatment")
+  SAMPLE_COLLECTION @map("sample_collection")
+  ANALYSIS          @map("analysis")
+  COMPLETED         @map("completed")
+  ARCHIVED          @map("archived")
+}
+
+enum AnalysisType {
+  RNA        @map("rna")
+  HISTOLOGY  @map("histology")
+  PCR        @map("pcr")
+  SEQUENCING @map("sequencing")
+}
+
+enum ImageType {
+  TUMOR      @map("tumor")
+  MICROSCOPY @map("microscopy")
+  GEL        @map("gel")
+  OTHER      @map("other")
+}

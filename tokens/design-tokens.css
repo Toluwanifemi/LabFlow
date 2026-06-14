@@ -1,0 +1,383 @@
+/* ====================================================
+ * DESIGN TOKENS (AUTOMATICALLY GENERATED)
+ * ====================================================
+ * Note: Only semantic color roles are exposed below.
+ * Primitive/palette colors are resolved and not exposed
+ * directly to the UI, as per system design guidelines.
+ * ==================================================== */
+
+:root {
+  /* ==================================================
+   * TYPOGRAPHY TOKENS
+   * ================================================== */
+  /* display large */
+  --typography-display-large-font-size: 57px;
+  --typography-display-large-text-decoration: none;
+  --typography-display-large-font-family: 'Inter', sans-serif;
+  --typography-display-large-font-weight: 400;
+  --typography-display-large-font-style: normal;
+  --typography-display-large-font-stretch: normal;
+  --typography-display-large-letter-spacing: -3.2px;
+  --typography-display-large-line-height: 85.5px;
+  --typography-display-large-paragraph-indent: 0px;
+  --typography-display-large-paragraph-spacing: 0px;
+  --typography-display-large-text-transform: none;
+
+  /* display medium */
+  --typography-display-medium-font-size: 45px;
+  --typography-display-medium-text-decoration: none;
+  --typography-display-medium-font-family: 'Inter', sans-serif;
+  --typography-display-medium-font-weight: 400;
+  --typography-display-medium-font-style: normal;
+  --typography-display-medium-font-stretch: normal;
+  --typography-display-medium-letter-spacing: -3.2px;
+  --typography-display-medium-line-height: 67.5px;
+  --typography-display-medium-paragraph-indent: 0px;
+  --typography-display-medium-paragraph-spacing: 0px;
+  --typography-display-medium-text-transform: none;
+
+  /* display small */
+  --typography-display-small-font-size: 36px;
+  --typography-display-small-text-decoration: none;
+  --typography-display-small-font-family: 'Inter', sans-serif;
+  --typography-display-small-font-weight: 400;
+  --typography-display-small-font-style: normal;
+  --typography-display-small-font-stretch: normal;
+  --typography-display-small-letter-spacing: -2.5px;
+  --typography-display-small-line-height: 54px;
+  --typography-display-small-paragraph-indent: 0px;
+  --typography-display-small-paragraph-spacing: 0px;
+  --typography-display-small-text-transform: none;
+
+  /* headline large */
+  --typography-headline-large-font-size: 32px;
+  --typography-headline-large-text-decoration: none;
+  --typography-headline-large-font-family: 'Inter', sans-serif;
+  --typography-headline-large-font-weight: 400;
+  --typography-headline-large-font-style: normal;
+  --typography-headline-large-font-stretch: normal;
+  --typography-headline-large-letter-spacing: -2.2px;
+  --typography-headline-large-line-height: 48px;
+  --typography-headline-large-paragraph-indent: 0px;
+  --typography-headline-large-paragraph-spacing: 0px;
+  --typography-headline-large-text-transform: none;
+
+  /* headline medium */
+  --typography-headline-medium-font-size: 28px;
+  --typography-headline-medium-text-decoration: none;
+  --typography-headline-medium-font-family: 'Inter', sans-serif;
+  --typography-headline-medium-font-weight: 400;
+  --typography-headline-medium-font-style: normal;
+  --typography-headline-medium-font-stretch: normal;
+  --typography-headline-medium-letter-spacing: -2px;
+  --typography-headline-medium-line-height: 42px;
+  --typography-headline-medium-paragraph-indent: 0px;
+  --typography-headline-medium-paragraph-spacing: 0px;
+  --typography-headline-medium-text-transform: none;
+
+  /* headline small */
+  --typography-headline-small-font-size: 24px;
+  --typography-headline-small-text-decoration: none;
+  --typography-headline-small-font-family: 'Inter', sans-serif;
+  --typography-headline-small-font-weight: 400;
+  --typography-headline-small-font-style: normal;
+  --typography-headline-small-font-stretch: normal;
+  --typography-headline-small-letter-spacing: -1.2px;
+  --typography-headline-small-line-height: 36px;
+  --typography-headline-small-paragraph-indent: 0px;
+  --typography-headline-small-paragraph-spacing: 0px;
+  --typography-headline-small-text-transform: none;
+
+  /* title large */
+  --typography-title-large-font-size: 22px;
+  --typography-title-large-text-decoration: none;
+  --typography-title-large-font-family: 'Inter', sans-serif;
+  --typography-title-large-font-weight: 400;
+  --typography-title-large-font-style: normal;
+  --typography-title-large-font-stretch: normal;
+  --typography-title-large-letter-spacing: -1.2px;
+  --typography-title-large-line-height: 33px;
+  --typography-title-large-paragraph-indent: 0px;
+  --typography-title-large-paragraph-spacing: 0px;
+  --typography-title-large-text-transform: none;
+
+  /* title medium */
+  --typography-title-medium-font-size: 16px;
+  --typography-title-medium-text-decoration: none;
+  --typography-title-medium-font-family: 'Inter', sans-serif;
+  --typography-title-medium-font-weight: 500;
+  --typography-title-medium-font-style: normal;
+  --typography-title-medium-font-stretch: normal;
+  --typography-title-medium-letter-spacing: -1px;
+  --typography-title-medium-line-height: 24px;
+  --typography-title-medium-paragraph-indent: 0px;
+  --typography-title-medium-paragraph-spacing: 0px;
+  --typography-title-medium-text-transform: none;
+
+  /* title small */
+  --typography-title-small-font-size: 14px;
+  --typography-title-small-text-decoration: none;
+  --typography-title-small-font-family: 'Inter', sans-serif;
+  --typography-title-small-font-weight: 500;
+  --typography-title-small-font-style: normal;
+  --typography-title-small-font-stretch: normal;
+  --typography-title-small-letter-spacing: -0.8px;
+  --typography-title-small-line-height: 21px;
+  --typography-title-small-paragraph-indent: 0px;
+  --typography-title-small-paragraph-spacing: 0px;
+  --typography-title-small-text-transform: none;
+
+  /* body large */
+  --typography-body-large-font-size: 16px;
+  --typography-body-large-text-decoration: none;
+  --typography-body-large-font-family: 'Inter', sans-serif;
+  --typography-body-large-font-weight: 400;
+  --typography-body-large-font-style: normal;
+  --typography-body-large-font-stretch: normal;
+  --typography-body-large-letter-spacing: -0.8px;
+  --typography-body-large-line-height: 24px;
+  --typography-body-large-paragraph-indent: 0px;
+  --typography-body-large-paragraph-spacing: 0px;
+  --typography-body-large-text-transform: none;
+
+  /* body medium */
+  --typography-body-medium-font-size: 14px;
+  --typography-body-medium-text-decoration: none;
+  --typography-body-medium-font-family: 'Inter', sans-serif;
+  --typography-body-medium-font-weight: 400;
+  --typography-body-medium-font-style: normal;
+  --typography-body-medium-font-stretch: normal;
+  --typography-body-medium-letter-spacing: -0.8px;
+  --typography-body-medium-line-height: 21px;
+  --typography-body-medium-paragraph-indent: 0px;
+  --typography-body-medium-paragraph-spacing: 0px;
+  --typography-body-medium-text-transform: none;
+
+  /* body small */
+  --typography-body-small-font-size: 12px;
+  --typography-body-small-text-decoration: none;
+  --typography-body-small-font-family: 'Inter', sans-serif;
+  --typography-body-small-font-weight: 400;
+  --typography-body-small-font-style: normal;
+  --typography-body-small-font-stretch: normal;
+  --typography-body-small-letter-spacing: -0.8px;
+  --typography-body-small-line-height: 18px;
+  --typography-body-small-paragraph-indent: 0px;
+  --typography-body-small-paragraph-spacing: 0px;
+  --typography-body-small-text-transform: none;
+
+  /* label large */
+  --typography-label-large-font-size: 14px;
+  --typography-label-large-text-decoration: none;
+  --typography-label-large-font-family: 'Inter', sans-serif;
+  --typography-label-large-font-weight: 600;
+  --typography-label-large-font-style: normal;
+  --typography-label-large-font-stretch: normal;
+  --typography-label-large-letter-spacing: -0.8px;
+  --typography-label-large-line-height: 21px;
+  --typography-label-large-paragraph-indent: 0px;
+  --typography-label-large-paragraph-spacing: 0px;
+  --typography-label-large-text-transform: none;
+
+  /* label medium */
+  --typography-label-medium-font-size: 12px;
+  --typography-label-medium-text-decoration: none;
+  --typography-label-medium-font-family: 'Inter', sans-serif;
+  --typography-label-medium-font-weight: 600;
+  --typography-label-medium-font-style: normal;
+  --typography-label-medium-font-stretch: normal;
+  --typography-label-medium-letter-spacing: -0.8px;
+  --typography-label-medium-line-height: 18px;
+  --typography-label-medium-paragraph-indent: 0px;
+  --typography-label-medium-paragraph-spacing: 0px;
+  --typography-label-medium-text-transform: none;
+
+  /* label small */
+  --typography-label-small-font-size: 11px;
+  --typography-label-small-text-decoration: none;
+  --typography-label-small-font-family: 'Inter', sans-serif;
+  --typography-label-small-font-weight: 500;
+  --typography-label-small-font-style: normal;
+  --typography-label-small-font-stretch: normal;
+  --typography-label-small-letter-spacing: -0.8px;
+  --typography-label-small-line-height: 16.5px;
+  --typography-label-small-paragraph-indent: 0px;
+  --typography-label-small-paragraph-spacing: 0px;
+  --typography-label-small-text-transform: none;
+
+  /* ==================================================
+   * COLOR ROLES - LIGHT THEME (DEFAULT)
+   * ================================================== */
+  --color-primary: hsl(224, 64%, 33%);
+  --color-on-primary: hsl(0, 0%, 100%);
+  --color-primary-container: hsl(228, 100%, 85%);
+  --color-on-primary-container: hsl(224, 59%, 35%);
+  --color-secondary: hsl(217, 100%, 43%);
+  --color-on-secondary: hsl(0, 0%, 100%);
+  --color-secondary-container: hsl(226, 100%, 85%);
+  --color-on-secondary-container: hsl(218, 100%, 33%);
+  --color-tertiary: hsl(145, 100%, 22%);
+  --color-on-tertiary: hsl(0, 0%, 100%);
+  --color-tertiary-container: hsl(133, 66%, 63%);
+  --color-on-tertiary-container: hsl(143, 100%, 16%);
+  --color-error: hsl(0, 57%, 55%);
+  --color-on-error: hsl(0, 0%, 100%);
+  --color-error-container: hsl(3, 100%, 84%);
+  --color-on-error-container: hsl(357, 70%, 32%);
+  --color-background: hsl(240, 100%, 99%);
+  --color-on-background: hsl(222, 37%, 12%);
+  --color-surface: hsl(240, 100%, 99%);
+  --color-on-surface: hsl(222, 37%, 12%);
+  --color-surface-variant: hsl(224, 49%, 91%);
+  --color-on-surface-variant: hsl(219, 14%, 29%);
+  --color-outline: hsl(220, 9%, 48%);
+  --color-outline-variant: hsl(221, 21%, 80%);
+  --color-inverse-surface: hsl(222, 22%, 21%);
+  --color-inverse-on-surface: hsl(230, 100%, 96%);
+  --color-inverse-primary: hsl(228, 100%, 85%);
+  --color-surface-dim: hsl(225, 47%, 88%);
+  --color-surface-bright: hsl(240, 100%, 99%);
+  --color-surface-container-lowest: hsl(0, 0%, 100%);
+  --color-surface-container-low: hsl(231, 100%, 97%);
+  --color-surface-container: hsl(229, 100%, 96%);
+  --color-surface-container-high: hsl(225, 88%, 94%);
+  --color-surface-container-highest: hsl(231, 100%, 97%);
+  --color-warning: hsl(35, 90%, 50%);
+  --color-on-warning: hsl(0, 0%, 100%);
+  --color-warning-container: hsl(45, 100%, 90%);
+  --color-on-warning-container: hsl(35, 100%, 18%);
+}
+
+/* ==================================================
+ * COLOR ROLES - EXPLICIT LIGHT THEME SELECTOR
+ * ================================================== */
+[data-theme="light"] {
+  --color-primary: hsl(224, 64%, 33%);
+  --color-on-primary: hsl(0, 0%, 100%);
+  --color-primary-container: hsl(228, 100%, 85%);
+  --color-on-primary-container: hsl(224, 59%, 35%);
+  --color-secondary: hsl(217, 100%, 43%);
+  --color-on-secondary: hsl(0, 0%, 100%);
+  --color-secondary-container: hsl(226, 100%, 85%);
+  --color-on-secondary-container: hsl(218, 100%, 33%);
+  --color-tertiary: hsl(145, 100%, 22%);
+  --color-on-tertiary: hsl(0, 0%, 100%);
+  --color-tertiary-container: hsl(133, 66%, 63%);
+  --color-on-tertiary-container: hsl(143, 100%, 16%);
+  --color-error: hsl(0, 57%, 55%);
+  --color-on-error: hsl(0, 0%, 100%);
+  --color-error-container: hsl(3, 100%, 84%);
+  --color-on-error-container: hsl(357, 70%, 32%);
+  --color-background: hsl(240, 100%, 99%);
+  --color-on-background: hsl(222, 37%, 12%);
+  --color-surface: hsl(240, 100%, 99%);
+  --color-on-surface: hsl(222, 37%, 12%);
+  --color-surface-variant: hsl(224, 49%, 91%);
+  --color-on-surface-variant: hsl(219, 14%, 29%);
+  --color-outline: hsl(220, 9%, 48%);
+  --color-outline-variant: hsl(221, 21%, 80%);
+  --color-inverse-surface: hsl(222, 22%, 21%);
+  --color-inverse-on-surface: hsl(230, 100%, 96%);
+  --color-inverse-primary: hsl(228, 100%, 85%);
+  --color-surface-dim: hsl(225, 47%, 88%);
+  --color-surface-bright: hsl(240, 100%, 99%);
+  --color-surface-container-lowest: hsl(0, 0%, 100%);
+  --color-surface-container-low: hsl(231, 100%, 97%);
+  --color-surface-container: hsl(229, 100%, 96%);
+  --color-surface-container-high: hsl(225, 88%, 94%);
+  --color-surface-container-highest: hsl(231, 100%, 97%);
+  --color-warning: hsl(35, 90%, 50%);
+  --color-on-warning: hsl(0, 0%, 100%);
+  --color-warning-container: hsl(45, 100%, 90%);
+  --color-on-warning-container: hsl(35, 100%, 18%);
+}
+
+/* ==================================================
+ * COLOR ROLES - EXPLICIT DARK THEME SELECTOR
+ * ================================================== */
+[data-theme="dark"] {
+  --color-primary: hsl(224, 64%, 33%);
+  --color-on-primary: hsl(221, 95%, 24%);
+  --color-primary-container: hsl(224, 59%, 35%);
+  --color-on-primary-container: hsl(231, 100%, 93%);
+  --color-secondary: hsl(226, 100%, 85%);
+  --color-on-secondary: hsl(219, 100%, 23%);
+  --color-secondary-container: hsl(218, 100%, 33%);
+  --color-on-secondary-container: hsl(230, 100%, 93%);
+  --color-tertiary: hsl(133, 66%, 63%);
+  --color-on-tertiary: hsl(141, 100%, 11%);
+  --color-tertiary-container: hsl(143, 100%, 16%);
+  --color-on-tertiary-container: hsl(132, 95%, 74%);
+  --color-error: hsl(3, 100%, 84%);
+  --color-on-error: hsl(353, 100%, 20%);
+  --color-error-container: hsl(357, 70%, 32%);
+  --color-on-error-container: hsl(4, 100%, 92%);
+  --color-background: hsl(222, 37%, 7.2%);
+  --color-on-background: hsl(227, 63%, 92%);
+  --color-surface: hsl(222, 37%, 7.2%);
+  --color-on-surface: hsl(227, 63%, 92%);
+  --color-surface-variant: hsl(219, 14%, 29%);
+  --color-on-surface-variant: hsl(221, 21%, 80%);
+  --color-outline: hsl(221, 10%, 58%);
+  --color-outline-variant: hsl(219, 14%, 29%);
+  --color-inverse-surface: hsl(227, 63%, 92%);
+  --color-inverse-on-surface: hsl(222, 22%, 21%);
+  --color-inverse-primary: hsl(225, 45%, 46%);
+  --color-surface-dim: hsl(222, 37%, 7.2%);
+  --color-surface-bright: hsl(222, 20%, 24.6%);
+  --color-surface-container-lowest: hsl(222, 37%, 4.8%);
+  --color-surface-container-low: hsl(222, 37%, 12%);
+  --color-surface-container: hsl(222, 34%, 13.8%);
+  --color-surface-container-high: hsl(222, 27%, 18.3%);
+  --color-surface-container-highest: hsl(222, 21%, 22.8%);
+  --color-warning: hsl(35, 90%, 50%);
+  --color-on-warning: hsl(35, 100%, 18%);
+  --color-warning-container: hsl(35, 100%, 28%);
+  --color-on-warning-container: hsl(45, 100%, 90%);
+}
+
+/* ==================================================
+ * COLOR ROLES - AUTOMATIC SYSTEM DARK MODE SUPPORT
+ * ================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: hsl(224, 64%, 33%);
+    --color-on-primary: hsl(221, 95%, 24%);
+    --color-primary-container: hsl(224, 59%, 35%);
+    --color-on-primary-container: hsl(231, 100%, 93%);
+    --color-secondary: hsl(226, 100%, 85%);
+    --color-on-secondary: hsl(219, 100%, 23%);
+    --color-secondary-container: hsl(218, 100%, 33%);
+    --color-on-secondary-container: hsl(230, 100%, 93%);
+    --color-tertiary: hsl(133, 66%, 63%);
+    --color-on-tertiary: hsl(141, 100%, 11%);
+    --color-tertiary-container: hsl(143, 100%, 16%);
+    --color-on-tertiary-container: hsl(132, 95%, 74%);
+    --color-error: hsl(3, 100%, 84%);
+    --color-on-error: hsl(353, 100%, 20%);
+    --color-error-container: hsl(357, 70%, 32%);
+    --color-on-error-container: hsl(4, 100%, 92%);
+    --color-background: hsl(222, 37%, 7.2%);
+    --color-on-background: hsl(227, 63%, 92%);
+    --color-surface: hsl(222, 37%, 7.2%);
+    --color-on-surface: hsl(227, 63%, 92%);
+    --color-surface-variant: hsl(219, 14%, 29%);
+    --color-on-surface-variant: hsl(221, 21%, 80%);
+    --color-outline: hsl(221, 10%, 58%);
+    --color-outline-variant: hsl(219, 14%, 29%);
+    --color-inverse-surface: hsl(227, 63%, 92%);
+    --color-inverse-on-surface: hsl(222, 22%, 21%);
+    --color-inverse-primary: hsl(225, 45%, 46%);
+    --color-surface-dim: hsl(222, 37%, 7.2%);
+    --color-surface-bright: hsl(222, 20%, 24.6%);
+    --color-surface-container-lowest: hsl(222, 37%, 4.8%);
+    --color-surface-container-low: hsl(222, 37%, 12%);
+    --color-surface-container: hsl(222, 34%, 13.8%);
+    --color-surface-container-high: hsl(222, 27%, 18.3%);
+    --color-surface-container-highest: hsl(222, 21%, 22.8%);
+    --color-warning: hsl(35, 90%, 50%);
+    --color-on-warning: hsl(35, 100%, 18%);
+    --color-warning-container: hsl(35, 100%, 28%);
+    --color-on-warning-container: hsl(45, 100%, 90%);
+  }
+}

@@ -1,0 +1,89 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: var(--typography-title-medium-font-size, 18px);
+  margin: 0;
+}
+
+.currentPhaseBadge {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: var(--color-tertiary-container);
+  color: var(--color-on-tertiary-container);
+  border-radius: 8px;
+  font-size: var(--typography-title-small-font-size, 16px);
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+.empty {
+  color: var(--color-on-surface-variant);
+  font-style: italic;
+  font-size: var(--typography-body-medium-font-size, 14px);
+}
+
+.history {
+  margin-top: 16px;
+  border-top: 1px solid var(--color-outline-variant);
+  padding-top: 16px;
+}
+
+.historyTitle {
+  font-size: var(--typography-label-medium-font-size, 12px);
+  color: var(--color-on-surface-variant);
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+}
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timelineItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.timelineItem::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  margin-top: 6px;
+}
+
+.timelineContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelinePhase {
+  font-weight: 500;
+  color: var(--color-on-surface);
+}
+
+.timelineMeta {
+  font-size: var(--typography-label-small-font-size, 11px);
+  color: var(--color-on-surface-variant);
+}

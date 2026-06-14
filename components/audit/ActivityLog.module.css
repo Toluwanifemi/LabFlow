@@ -1,0 +1,134 @@
+.wrapper {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--typography-body-medium-font-size, 14px);
+}
+
+.table th, .table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.table th {
+  font-size: var(--typography-label-medium-font-size, 12px);
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+  background-color: var(--color-surface-variant);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.timestampCol {
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.whoCol {
+  /* desktop only */
+}
+
+.user {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-weight: 500;
+  color: var(--color-on-surface);
+}
+
+.userEmail {
+  font-size: var(--typography-label-small-font-size, 11px);
+  color: var(--color-on-surface-variant);
+}
+
+.descCol {
+  color: var(--color-on-surface);
+  line-height: 1.5;
+}
+
+.mobileName {
+  display: none;
+}
+
+.mobileTime {
+  display: none;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: var(--color-on-surface-variant);
+  font-style: italic;
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-outline);
+  border-radius: 12px;
+}
+
+@media (max-width: 767px) {
+  .wrapper {
+    overflow-x: visible;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    display: block;
+  }
+
+  .table tr:not(:last-child) .descCol {
+    border-bottom: 1px solid var(--color-outline-variant);
+  }
+
+  .timestampCol,
+  .whoCol {
+    display: none;
+  }
+
+  .descCol {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 16px;
+    border: none;
+  }
+
+  .descText {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobileName {
+    display: inline;
+    font-weight: 600;
+  }
+
+  .mobileTime {
+    display: inline;
+    flex-shrink: 0;
+    white-space: nowrap;
+    color: var(--color-on-surface-variant);
+    font-size: 13px;
+    margin-left: 16px;
+  }
+
+  .user {
+    flex-direction: row;
+    gap: 8px;
+  }
+}

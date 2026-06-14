@@ -1,0 +1,64 @@
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 20px;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+}
+
+.value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-on-surface);
+  margin: 0;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--typography-body-small-font-size, 12px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.trendIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.trendUp {
+  color: #16a34a;
+}
+
+.trendDown {
+  color: #dc2626;
+}
+
+.trendNeutral {
+  color: var(--color-on-surface-variant);
+}

@@ -1,0 +1,60 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background-color: #FFF8E1;
+  border: 1px solid #FFE082;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: #FFE082;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #E65100;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message {
+  font-size: var(--typography-body-medium-font-size, 14px);
+  color: var(--color-on-surface);
+  margin: 0 0 6px;
+  font-weight: 500;
+}
+
+.action {
+  font-size: var(--typography-body-small-font-size, 12px);
+  color: var(--color-primary);
+  font-weight: 600;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.action:hover {
+  text-decoration: underline;
+}

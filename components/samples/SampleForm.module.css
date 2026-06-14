@@ -1,0 +1,76 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.optionalSection {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.optionalTitle {
+  font-size: var(--typography-label-medium-font-size, 12px);
+  color: var(--color-on-surface-variant);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.submitBtn {
+  margin-top: 24px;
+}
+
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.label {
+  font-size: var(--typography-label-medium-font-size, 12px);
+  font-weight: var(--typography-label-medium-font-weight, 500);
+  color: var(--color-on-surface);
+}
+
+.select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-outline);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  font-size: var(--typography-body-large-font-size, 16px);
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.inputError {
+  border-color: var(--color-error);
+}
+
+.inputError:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 1px var(--color-error);
+}
+
+.errorText {
+  color: var(--color-error);
+  font-size: var(--typography-body-small-font-size, 12px);
+  min-height: 16px;
+  margin-top: 4px;
+}

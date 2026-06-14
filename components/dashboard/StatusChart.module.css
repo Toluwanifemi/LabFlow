@@ -1,0 +1,65 @@
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--typography-body-medium-font-size, 14px);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.phaseName {
+  color: var(--color-on-surface);
+  font-weight: 500;
+  flex: 1;
+}
+
+.count {
+  color: var(--color-on-surface);
+  font-weight: 700;
+  min-width: 28px;
+  text-align: right;
+}
+
+.percentage {
+  color: var(--color-on-surface-variant);
+  min-width: 40px;
+  text-align: right;
+}
+
+.barTrack {
+  height: 8px;
+  background-color: var(--color-surface-container-high);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--color-on-surface-variant);
+  font-size: var(--typography-body-medium-font-size, 14px);
+}

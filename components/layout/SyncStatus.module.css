@@ -1,0 +1,24 @@
+.bar {
+  width: 100%;
+  padding: 8px 16px;
+  font-size: var(--typography-label-medium-font-size, 12px);
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.offline {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+.syncing {
+  background-color: var(--color-secondary-container);
+  color: var(--color-on-secondary-container);
+}
+
+.online {
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+}
