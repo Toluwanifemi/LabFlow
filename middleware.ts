@@ -3,9 +3,15 @@ import { NextResponse } from 'next/server';
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
   const isAuthRoute = pathname.startsWith('/auth');
   const isLandingPage = pathname === '/';
+  const mode = searchParams.get('mode');
+
+  // Allow verify and reset-password modes regardless of auth state
+  if (isAuthRoute && (mode === 'verify' || mode === 'reset-password')) {
+    return NextResponse.next();
+  }
 
   if (isAuthRoute) {
     if (isLoggedIn) {

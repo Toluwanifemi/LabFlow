@@ -2,17 +2,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   width: 100%;
 }
 
 .scannerWrapper {
   position: relative;
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
   aspect-ratio: 1;
-  background-color: var(--color-surface-variant);
-  border-radius: 12px;
+  background-color: var(--color-surface-container-highest, #1f1f1f);
+  border-radius: 16px;
+  box-shadow: var(--shadow-elevation-medium, 0 4px 12px rgba(0, 0, 0, 0.15));
+  border: 2px solid var(--color-outline-variant, #444);
   overflow: hidden;
   display: flex;
   justify-content: center;
@@ -25,16 +27,205 @@
   object-fit: cover;
 }
 
+/* Semi-transparent mask overlay with corner cutouts */
+.hudOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.viewfinder {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+/* Pulsing scanner laser line */
+.scannerLine {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2.5px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-primary, #00f0ff),
+    transparent
+  );
+  box-shadow: 0 0 12px var(--color-primary, #00f0ff);
+  animation: scan 2s ease-in-out infinite;
+  border-radius: 2px;
+}
+
+@keyframes scan {
+  0%, 100% {
+    top: 5%;
+  }
+  50% {
+    top: 95%;
+  }
+}
+
+/* Corner brackets — using theme primary color */
+.corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: var(--color-primary, #00f0ff);
+  border-style: solid;
+  border-width: 0;
+}
+
+.corner::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  opacity: 0.4;
+  filter: blur(4px);
+  background: var(--color-primary, #00f0ff);
+  z-index: -1;
+}
+
+.topLeft {
+  top: -1px;
+  left: -1px;
+  border-top-width: 3px;
+  border-left-width: 3px;
+  border-radius: 4px 0 0 0;
+}
+
+.topRight {
+  top: -1px;
+  right: -1px;
+  border-top-width: 3px;
+  border-right-width: 3px;
+  border-radius: 0 4px 0 0;
+}
+
+.bottomLeft {
+  bottom: -1px;
+  left: -1px;
+  border-bottom-width: 3px;
+  border-left-width: 3px;
+  border-radius: 0 0 0 4px;
+}
+
+.bottomRight {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+  border-radius: 0 0 4px 0;
+}
+
+/* Floating control panel */
+.controls {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  gap: 16px;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.iconBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface-variant);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-elevation-small, 0 2px 8px rgba(0, 0, 0, 0.15));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.iconBtn:hover {
+  transform: scale(1.08);
+  background-color: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.iconBtn:active {
+  transform: scale(0.92);
+}
+
+.iconBtn.active {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 16px var(--color-primary, #00f0ff);
+}
+
+/* Overlay when camera is stopped */
 .overlay {
   position: absolute;
   inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: var(--color-surface);
+  padding: 24px;
+  text-align: center;
+  z-index: 5;
 }
 
-.stopBtn {
+.startPromo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 260px;
+}
+
+.qrIconBig {
+  color: var(--color-primary);
+  width: 64px;
+  height: 64px;
+  opacity: 0.8;
+}
+
+.promoText {
+  font-size: var(--typography-body-medium-font-size, 14px);
+  color: var(--color-on-surface-variant);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.startBtn {
   width: 100%;
-  max-width: 400px;
+}
+
+.instruction {
+  margin-top: 16px;
+  font-size: var(--typography-label-medium-font-size, 12px);
+  font-family: var(--typography-label-medium-font-family, inherit);
+  color: var(--color-on-surface);
+  background-color: var(--color-surface);
+  padding: 8px 16px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+  box-shadow: var(--shadow-elevation-small, 0 2px 8px rgba(0, 0, 0, 0.1));
+  pointer-events: none;
+  border: 1px solid var(--color-outline-variant);
+  z-index: 10;
+  white-space: nowrap;
 }

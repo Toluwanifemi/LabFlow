@@ -156,6 +156,34 @@
   background-color: var(--color-primary-container);
 }
 
+.removeIconBtn {
+  background: none;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 6px;
+  padding: 6px;
+  margin-left: 6px;
+  cursor: pointer;
+  color: var(--color-on-surface-variant);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.removeIconBtn:hover {
+  color: var(--color-error, #d32f2f);
+  border-color: var(--color-error, #d32f2f);
+  background-color: var(--color-error-container, #ffcdd2);
+}
+
+.inactiveLabel {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-error, #d32f2f);
+}
+
 .addBtnDesktopWrapper {
   display: block;
 }

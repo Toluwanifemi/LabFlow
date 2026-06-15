@@ -47,7 +47,10 @@ export async function POST(req: Request) {
       }),
     ]);
 
-    return NextResponse.json({ message: 'Email verified and password set. You can now log in.' });
+    return NextResponse.json({
+      message: 'Email verified and password set. You can now log in.',
+      email: verificationToken.email,
+    });
   } catch (error) {
     console.error('[verify-invite] Error:', error);
     return NextResponse.json({ error: 'Something went wrong. Please try again later.' }, { status: 500 });

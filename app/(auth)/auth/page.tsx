@@ -42,13 +42,16 @@ function AuthForms() {
   const [resetPasswordError, setResetPasswordError] = useState('');
   const [resetConfirmError, setResetConfirmError] = useState('');
 
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [verifyPasswordFocused, setVerifyPasswordFocused] = useState(false);
+  const [resetPasswordFocused, setResetPasswordFocused] = useState(false);
+
   const [forgotSent, setForgotSent] = useState(false);
 
   const [verifyPassword, setVerifyPassword] = useState('');
   const [verifyConfirmPassword, setVerifyConfirmPassword] = useState('');
   const [verifyPasswordError, setVerifyPasswordError] = useState('');
   const [verifyConfirmError, setVerifyConfirmError] = useState('');
-  const [verifyDone, setVerifyDone] = useState(false);
 
   const switchMode = (newMode: AuthMode) => {
     const params = newMode === 'login' ? '' : `?mode=${newMode}`;
@@ -178,14 +181,29 @@ function AuthForms() {
     e.preventDefault();
     let valid = true;
 
-    if (!resetPassword || resetPassword.length < 8) {
-      setResetPasswordError('Minimum of 8 characters');
+    if (!resetPassword) {
+      setResetPasswordError('This field cannot be empty.');
+      valid = false;
+    } else if (!/[A-Z]/.test(resetPassword)) {
+      setResetPasswordError('Must include an uppercase letter.');
+      valid = false;
+    } else if (!/[a-z]/.test(resetPassword)) {
+      setResetPasswordError('Must include a lowercase letter.');
+      valid = false;
+    } else if (!/[0-9]/.test(resetPassword)) {
+      setResetPasswordError('Must include a number.');
+      valid = false;
+    } else if (resetPassword.length < 8) {
+      setResetPasswordError('Minimum of 8 characters.');
       valid = false;
     } else {
       setResetPasswordError('');
     }
 
-    if (resetPassword !== resetConfirmPassword) {
+    if (!resetConfirmPassword) {
+      setResetConfirmError('This field cannot be empty.');
+      valid = false;
+    } else if (resetPassword !== resetConfirmPassword) {
       setResetConfirmError('Passwords do not match');
       valid = false;
     } else {
@@ -230,6 +248,7 @@ function AuthForms() {
                 type="email"
                 value={email}
                 onChange={e => { setEmail(e.target.value); setLoginError(''); if (e.target.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) { setLoginEmailError('Enter a valid email address'); } else { setLoginEmailError(''); } }}
+                onFocus={() => { setLoginEmailError(''); setLoginError(''); }}
                 onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empty'); }}
                 error={loginEmailError}
                 required
@@ -241,6 +260,7 @@ function AuthForms() {
                 type="password"
                 value={password}
                 onChange={e => { setPassword(e.target.value); setLoginError(''); setLoginPasswordError(''); }}
+                onFocus={() => { setLoginPasswordError(''); setLoginError(''); }}
                 onBlur={() => { if (!password.trim()) setLoginPasswordError('This field cannot be empty'); }}
                 error={loginPasswordError}
                 required
@@ -271,10 +291,12 @@ function AuthForms() {
                 <>
                   <Input label="Enter Full Name" value={name}
                     onChange={e => { setName(e.target.value); setNameError(''); }}
+                    onFocus={() => setNameError('')}
                     onBlur={() => { if (!name.trim()) setNameError('This field cannot be empty'); }}
                     required autoFocus error={nameError} />
                   <Input label="Enter Email" type="email" value={email}
                     onChange={e => { setEmail(e.target.value); if (e.target.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) { setEmailError('Enter a valid email address'); } else { setEmailError(''); } }}
+                    onFocus={() => setEmailError('')}
                     onBlur={() => { if (!email.trim()) setEmailError('This field cannot be empty'); }}
                     required error={emailError} />
                   <Button type="button" onClick={handleNext} className={styles.submitBtn}>
@@ -290,8 +312,11 @@ function AuthForms() {
                   <Input label="Lab Name" value={labName}
                     onChange={e => setLabName(e.target.value)} required />
                   <Input label="Password" type="password" value={password}
-                    onChange={e => setPassword(e.target.value)} required />
-                  {password.length > 0 && (
+                    onChange={e => setPassword(e.target.value)}
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                    required />
+                  {passwordFocused && (
                     <ul className={styles.passwordRules}>
                       {!/[A-Z]/.test(password) && <li>Must include an uppercase letter</li>}
                       {/[A-Z]/.test(password) && !/[a-z]/.test(password) && <li>Must include a lowercase letter</li>}
@@ -333,6 +358,7 @@ function AuthForms() {
                   type="email"
                   value={email}
                   onChange={e => { setEmail(e.target.value); setLoginEmailError(''); }}
+                  onFocus={() => setLoginEmailError('')}
                   onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empty'); }}
                   error={loginEmailError}
                   required
@@ -363,24 +389,32 @@ function AuthForms() {
                   Back to Log In
                 </Button>
               </div>
-            ) : verifyDone ? (
-              <div className={styles.successMessage}>
-                <p>Email verified and password set. You can now log in.</p>
-                <Button onClick={() => switchMode('login')} className={styles.submitBtn}>
-                  Log In
-                </Button>
-              </div>
             ) : (
-              <form onSubmit={async (e) => {
+              <form noValidate onSubmit={async (e) => {
                 e.preventDefault();
                 let valid = true;
-                if (!verifyPassword || verifyPassword.length < 8) {
-                  setVerifyPasswordError('Minimum of 8 characters');
+                if (!verifyPassword) {
+                  setVerifyPasswordError('This field cannot be empty.');
+                  valid = false;
+                } else if (!/[A-Z]/.test(verifyPassword)) {
+                  setVerifyPasswordError('Must include an uppercase letter.');
+                  valid = false;
+                } else if (!/[a-z]/.test(verifyPassword)) {
+                  setVerifyPasswordError('Must include a lowercase letter.');
+                  valid = false;
+                } else if (!/[0-9]/.test(verifyPassword)) {
+                  setVerifyPasswordError('Must include a number.');
+                  valid = false;
+                } else if (verifyPassword.length < 8) {
+                  setVerifyPasswordError('Minimum of 8 characters.');
                   valid = false;
                 } else {
                   setVerifyPasswordError('');
                 }
-                if (verifyPassword !== verifyConfirmPassword) {
+                if (!verifyConfirmPassword) {
+                  setVerifyConfirmError('This field cannot be empty.');
+                  valid = false;
+                } else if (verifyPassword !== verifyConfirmPassword) {
                   setVerifyConfirmError('Passwords do not match');
                   valid = false;
                 } else {
@@ -398,8 +432,13 @@ function AuthForms() {
                   if (!res.ok) {
                     showToast({ message: data.error || 'Something went wrong. Please try again later.', type: 'error' });
                   } else {
-                    setVerifyDone(true);
                     showToast({ message: 'Email verified and password set.', type: 'success' });
+                    const signInRes = await signIn('credentials', {
+                      redirect: false,
+                      email: data.email,
+                      password: verifyPassword,
+                    });
+                    window.location.href = signInRes?.ok ? '/dashboard' : '/auth';
                   }
                 } catch {
                   showToast({ message: 'Something went wrong. Please try again later.', type: 'error' });
@@ -412,15 +451,26 @@ function AuthForms() {
                   type="password"
                   value={verifyPassword}
                   onChange={e => setVerifyPassword(e.target.value)}
+                  onFocus={() => { setVerifyPasswordFocused(true); setVerifyPasswordError(''); }}
+                  onBlur={() => setVerifyPasswordFocused(false)}
                   error={verifyPasswordError}
                   required
                   autoFocus
                 />
+                {verifyPasswordFocused && (
+                  <ul className={styles.passwordRules}>
+                    {!/[A-Z]/.test(verifyPassword) && <li>Must include an uppercase letter</li>}
+                    {/[A-Z]/.test(verifyPassword) && !/[a-z]/.test(verifyPassword) && <li>Must include a lowercase letter</li>}
+                    {/[A-Z]/.test(verifyPassword) && /[a-z]/.test(verifyPassword) && !/[0-9]/.test(verifyPassword) && <li>Must include a number</li>}
+                    {/[A-Z]/.test(verifyPassword) && /[a-z]/.test(verifyPassword) && /[0-9]/.test(verifyPassword) && verifyPassword.length < 8 && <li>Minimum of 8 characters</li>}
+                  </ul>
+                )}
                 <Input
                   label="Confirm Password"
                   type="password"
                   value={verifyConfirmPassword}
                   onChange={e => setVerifyConfirmPassword(e.target.value)}
+                  onFocus={() => setVerifyConfirmError('')}
                   error={verifyConfirmError}
                   required
                 />
@@ -444,21 +494,32 @@ function AuthForms() {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleResetPassword} className={styles.form}>
+              <form noValidate onSubmit={handleResetPassword} className={styles.form}>
                 <Input
                   label="New Password"
                   type="password"
                   value={resetPassword}
                   onChange={e => setResetPassword(e.target.value)}
+                  onFocus={() => { setResetPasswordFocused(true); setResetPasswordError(''); }}
+                  onBlur={() => setResetPasswordFocused(false)}
                   error={resetPasswordError}
                   required
                   autoFocus
                 />
+                {resetPasswordFocused && (
+                  <ul className={styles.passwordRules}>
+                    {!/[A-Z]/.test(resetPassword) && <li>Must include an uppercase letter</li>}
+                    {/[A-Z]/.test(resetPassword) && !/[a-z]/.test(resetPassword) && <li>Must include a lowercase letter</li>}
+                    {/[A-Z]/.test(resetPassword) && /[a-z]/.test(resetPassword) && !/[0-9]/.test(resetPassword) && <li>Must include a number</li>}
+                    {/[A-Z]/.test(resetPassword) && /[a-z]/.test(resetPassword) && /[0-9]/.test(resetPassword) && resetPassword.length < 8 && <li>Minimum of 8 characters</li>}
+                  </ul>
+                )}
                 <Input
                   label="Confirm Password"
                   type="password"
                   value={resetConfirmPassword}
                   onChange={e => setResetConfirmPassword(e.target.value)}
+                  onFocus={() => setResetConfirmError('')}
                   error={resetConfirmError}
                   required
                 />

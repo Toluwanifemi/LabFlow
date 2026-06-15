@@ -26,6 +26,8 @@ export default function TeamPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [userToRemove, setUserToRemove] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -118,10 +120,41 @@ export default function TeamPage() {
     }
   };
 
+  const handleRemoveMember = async () => {
+    if (!userToRemove) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/team', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userToRemove.id }),
+      });
+
+      if (res.ok) {
+        showToast({ message: `${userToRemove.name} removed from the lab.`, type: 'success' });
+        setIsRemoveModalOpen(false);
+        setUserToRemove(null);
+        fetchTeam();
+      } else {
+        const err = await res.json();
+        showToast({ message: err.error || 'Failed to remove member.', type: 'error' });
+      }
+    } catch (e) {
+      showToast({ message: 'An error occurred.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const openEditModal = (user: User) => {
     setSelectedUser(user);
     setRole(user.role);
     setIsEditModalOpen(true);
+  };
+
+  const openRemoveModal = (user: User) => {
+    setUserToRemove(user);
+    setIsRemoveModalOpen(true);
   };
 
   if (isLoading) return <div className={styles.container}>Loading team...</div>;
@@ -162,6 +195,7 @@ export default function TeamPage() {
                   <td className={styles.td}>
                     <div className={styles.memberNameContainer}>
                       <span className={styles.memberName}>{member.name}</span>
+                      {!member.isActive && <span className={styles.inactiveLabel}>(Inactive)</span>}
                     </div>
                   </td>
                   <td className={styles.td}>
@@ -177,6 +211,12 @@ export default function TeamPage() {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" />
+                      </svg>
+                    </button>
+                    <button className={styles.removeIconBtn} onClick={() => openRemoveModal(member)} aria-label="Remove member">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                       </svg>
                     </button>
                   </td>
@@ -235,6 +275,28 @@ export default function TeamPage() {
               <option value="VIEWER">Viewer</option>
             </select>
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isRemoveModalOpen}
+        title={`Remove ${userToRemove?.name} from your lab?`}
+        onClose={() => { setIsRemoveModalOpen(false); setUserToRemove(null); }}
+        primaryAction={{
+          label: "Remove",
+          onClick: handleRemoveMember,
+          isLoading: isSubmitting,
+          danger: true,
+        }}
+        secondaryAction={{
+          label: "Cancel",
+          onClick: () => { setIsRemoveModalOpen(false); setUserToRemove(null); },
+        }}
+      >
+        <div className={styles.form}>
+          <p style={{ fontSize: '14px', color: 'var(--color-on-surface-variant)', marginBottom: '8px' }}>
+            Their samples will remain in the lab and can still be viewed.
+          </p>
         </div>
       </Modal>
 

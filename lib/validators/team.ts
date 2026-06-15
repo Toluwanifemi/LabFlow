@@ -13,3 +13,7 @@ export const updateRoleSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
   role: RoleSchema,
 });
+
+export const removeMemberSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+});

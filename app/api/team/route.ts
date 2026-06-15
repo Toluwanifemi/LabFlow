@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { getUsersByLabId, createUser, updateUserRole, getUserByEmail } from '@/lib/db/users';
+import { getUsersByLabId, createUser, updateUserRole, deactivateUser, getUserByEmail } from '@/lib/db/users';
 import { writeAuditLog } from '@/lib/db/audit';
 import { prisma } from '@/lib/db/client';
-import { createMemberSchema, updateRoleSchema } from '@/lib/validators/team';
+import { createMemberSchema, updateRoleSchema, removeMemberSchema } from '@/lib/validators/team';
 import { sendInviteEmail } from '@/lib/email/mailer';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -173,6 +173,54 @@ export async function PATCH(req: NextRequest) {
 
   } catch (error) {
     console.error('[PATCH /api/team]', error);
+    return NextResponse.json({ error: 'Something went wrong. Please try again later.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!canPerformAction(session.user.role, 'manage_roles')) {
+      return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const parsed = removeMemberSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input.', details: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const { userId } = parsed.data;
+
+    if (userId === session.user.id) {
+      return NextResponse.json({ error: 'You cannot remove yourself.' }, { status: 400 });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId, labId: session.user.labId } });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+    }
+
+    await deactivateUser(userId, session.user.labId);
+
+    await writeAuditLog({
+      userId: session.user.id,
+      actionType: 'UPDATE',
+      sampleId: null,
+      fieldChanged: 'isActive',
+      oldValue: 'true',
+      newValue: 'false',
+      ipAddress: getIpAddress(req),
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+
+  } catch (error) {
+    console.error('[DELETE /api/team]', error);
     return NextResponse.json({ error: 'Something went wrong. Please try again later.' }, { status: 500 });
   }
 }

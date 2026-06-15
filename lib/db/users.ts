@@ -3,7 +3,7 @@ import { User, Role } from '@/types';
 
 export async function getUsersByLabId(labId: string): Promise<User[]> {
   return prisma.user.findMany({
-    where: { labId },
+    where: { labId, isActive: true },
     orderBy: { createdAt: 'desc' },
   }) as unknown as Promise<User[]>;
 }
@@ -27,6 +27,13 @@ export async function updateUserRole(userId: string, role: Role, labId: string):
   return prisma.user.update({
     where: { id: userId, labId },
     data: { role },
+  }) as unknown as Promise<User>;
+}
+
+export async function deactivateUser(userId: string, labId: string): Promise<User> {
+  return prisma.user.update({
+    where: { id: userId, labId },
+    data: { isActive: false },
   }) as unknown as Promise<User>;
 }
 
