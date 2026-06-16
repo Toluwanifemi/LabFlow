@@ -35,12 +35,6 @@ model User {
   emailVerified       DateTime? @map("email_verified")
   onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
 
-  // Back-relations for new expanded models
-  phaseHistoriesUpdated      SamplePhaseHistory[]
-  treatmentLogsAdministered  TreatmentLog[]
-  observationLogsObserved    ObservationLog[]
-  analysisRecordsPerformed   AnalysisRecord[]
-  sampleImagesUploaded       SampleImage[]
 
   @@map("users")
 }
@@ -93,12 +87,6 @@ model Sample {
   sex             Sex?
   age             Int?
 
-  // Relations to logging tables
-  phaseHistories  SamplePhaseHistory[]
-  treatmentLogs   TreatmentLog[]
-  observationLogs ObservationLog[]
-  analysisRecords AnalysisRecord[]
-  sampleImages    SampleImage[]
 
   createdBy       User          @relation("CreatedBy", fields: [createdById], references: [id])
   createdById     String        @map("created_by_id")
@@ -115,76 +103,7 @@ model Sample {
   @@map("samples")
 }
 
-model SamplePhaseHistory {
-  id          String    @id @default(cuid())
-  sampleId    String    @map("sample_id")
-  sample      Sample    @relation(fields: [sampleId], references: [id], onDelete: Restrict)
-  phase       PhaseType
-  notes       String?
-  updatedById String    @map("updated_by_id")
-  updatedBy   User      @relation(fields: [updatedById], references: [id])
-  timestamp   DateTime  @default(now())
 
-  @@map("sample_phase_histories")
-}
-
-model TreatmentLog {
-  id               String   @id @default(cuid())
-  sampleId         String   @map("sample_id")
-  sample           Sample   @relation(fields: [sampleId], references: [id], onDelete: Restrict)
-  treatmentType    String   @map("treatment_type")
-  dose             String
-  route            String
-  frequency        String
-  administeredById String   @map("administered_by_id")
-  administeredBy   User     @relation(fields: [administeredById], references: [id])
-  administeredAt   DateTime @default(now()) @map("administered_at")
-  notes            String?
-
-  @@map("treatment_logs")
-}
-
-model ObservationLog {
-  id            String   @id @default(cuid())
-  sampleId      String   @map("sample_id")
-  sample        Sample   @relation(fields: [sampleId], references: [id], onDelete: Restrict)
-  tumorPresent  Boolean  @map("tumor_present")
-  tumorSizeMm   Float?   @map("tumor_size_mm")
-  bodyWeight    Float?   @map("body_weight")
-  condition     String?
-  observedById  String   @map("observed_by_id")
-  observedBy    User     @relation(fields: [observedById], references: [id])
-  observedAt    DateTime @default(now()) @map("observed_at")
-  notes         String?
-
-  @@map("observation_logs")
-}
-
-model AnalysisRecord {
-  id             String       @id @default(cuid())
-  sampleId       String       @map("sample_id")
-  sample         Sample       @relation(fields: [sampleId], references: [id], onDelete: Restrict)
-  analysisType   AnalysisType @map("analysis_type")
-  resultSummary  String?      @map("result_summary")
-  performedById  String       @map("performed_by_id")
-  performedBy    User         @relation(fields: [performedById], references: [id])
-  performedAt    DateTime     @default(now()) @map("performed_at")
-
-  @@map("analysis_records")
-}
-
-model SampleImage {
-  id           String    @id @default(cuid())
-  sampleId     String    @map("sample_id")
-  sample       Sample    @relation(fields: [sampleId], references: [id], onDelete: Restrict)
-  imageUrl     String    @map("image_url")
-  imageType    ImageType @map("image_type")
-  uploadedById String    @map("uploaded_by_id")
-  uploadedBy   User      @relation(fields: [uploadedById], references: [id])
-  uploadedAt   DateTime  @default(now()) @map("uploaded_at")
-
-  @@map("sample_images")
-}
 
 model AuditLog {
   id           String      @id @default(cuid())

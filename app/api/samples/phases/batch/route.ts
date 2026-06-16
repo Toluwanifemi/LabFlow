@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { batchUpdatePhase } from '@/lib/db/samples';
+import { batchUpdatePhase } from '@/lib/db/phases';
+import { getSamplesByIds } from '@/lib/db/samples';
+import { getUserByEmailWithLab } from '@/lib/db/users';
 import { writeAuditLog } from '@/lib/db/audit';
-import { prisma } from '@/lib/db/client';
-
-function getIpAddress(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  );
-}
+import { getIpAddress } from '@/lib/api/utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,10 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, labId: true, role: true, name: true, isActive: true },
-    });
+    const dbUser = await getUserByEmailWithLab(session.user.email);
 
     if (!dbUser || !dbUser.isActive) {
       return NextResponse.json({ error: 'User not found.' }, { status: 401 });
@@ -46,10 +37,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingSamples = await prisma.sample.findMany({
-      where: { id: { in: sampleIds }, labId: dbUser.labId },
-      select: { id: true, currentPhase: true },
-    });
+    const existingSamples = await getSamplesByIds(sampleIds, dbUser.labId);
     const oldPhaseMap = new Map(existingSamples.map((s) => [s.id, s.currentPhase]));
 
     const updated = await batchUpdatePhase(

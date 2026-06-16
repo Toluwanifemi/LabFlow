@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { getSampleById, softDeleteSample } from '@/lib/db/samples';
+import { getSampleById, softDeleteSample, restoreSample, updateSample } from '@/lib/db/samples';
 import { writeAuditLog } from '@/lib/db/audit';
-import { prisma } from '@/lib/db/client';
 import { createSampleSchema } from '@/lib/validators/sample';
-
-function getIpAddress(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  );
-}
+import { getIpAddress } from '@/lib/api/utils';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -22,13 +14,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const sample = await getSampleById(params.id, session.user.labId);
     
     if (!sample) {
-      return NextResponse.json({ error: 'Sample not found' }, { status: 404 });
+      return NextResponse.json({ error: 'This sample does not exist.' }, { status: 404 });
     }
 
     return NextResponse.json(sample, { status: 200 });
   } catch (error) {
     console.error('[GET /api/samples/[id]]', error);
-    return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 });
+    return NextResponse.json({ error: 'Something went wrong. Please try again later.' }, { status: 500 });
   }
 }
 
@@ -41,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     if (body.isDeleted === true) {
       if (!canPerformAction(session.user.role, 'soft_delete_sample')) {
-        return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
+        return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
       }
       const updated = await softDeleteSample(params.id, session.user.id, session.user.labId);
       
@@ -57,13 +49,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     if (body.isDeleted === false) {
       if (!canPerformAction(session.user.role, 'restore_sample')) {
-        return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
+        return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
       }
       
-      const updated = await prisma.sample.update({
-        where: { id: params.id, labId: session.user.labId },
-        data: { isDeleted: false, deletedAt: null, deletedById: null }
-      });
+      const updated = await restoreSample(params.id, session.user.labId);
 
       await writeAuditLog({
         userId: session.user.id,
@@ -77,7 +66,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // Handle editing sample fields
     if (!canPerformAction(session.user.role, 'edit_sample')) {
-      return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
+      return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
     }
 
     const parsed = createSampleSchema.partial().safeParse(body);
@@ -88,12 +77,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       );
     }
 
-    const existing = await prisma.sample.findUnique({
-      where: { id: params.id, labId: session.user.labId },
-    });
+    const existing = await getSampleById(params.id, session.user.labId);
 
     if (!existing) {
-      return NextResponse.json({ error: 'Sample not found' }, { status: 404 });
+      return NextResponse.json({ error: 'This sample does not exist.' }, { status: 404 });
     }
 
     const data = parsed.data;
@@ -102,10 +89,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       updateData.collectionDate = new Date(data.collectionDate);
     }
 
-    const updated = await prisma.sample.update({
-      where: { id: params.id, labId: session.user.labId },
-      data: updateData,
-    });
+    const updated = await updateSample(params.id, session.user.labId, updateData);
 
     const changedFields: Record<string, { oldValue: string; newValue: string }> = {};
     const trackedFields: Array<keyof typeof data> = ['sampleType', 'source', 'description', 'experimentType', 'collectionDate'];
@@ -147,6 +131,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
     console.error('[PATCH /api/samples/[id]]', error);
-    return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 });
+    return NextResponse.json({ error: 'Something went wrong. Please try again later.' }, { status: 500 });
   }
 }

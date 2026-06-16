@@ -1,6 +1,6 @@
 'use client';
 import { useSession, signOut } from 'next-auth/react';
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './Navbar.module.css';
 
@@ -9,6 +9,22 @@ export function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   const handleToggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -65,7 +81,7 @@ export function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
         {/* Right: User Profile */}
         <div className={styles.rightSection}>
           {session?.user ? (
-            <div className={styles.profileContainer}>
+            <div className={styles.profileContainer} ref={dropdownRef}>
               <button className={styles.profileButton} onClick={handleToggleDropdown}>
                 <div className={styles.avatarWrapper}>
                   <div className={styles.avatar}>

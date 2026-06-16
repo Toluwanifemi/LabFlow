@@ -1,9 +1,14 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/client';
+import { NextRequest, NextResponse } from 'next/server';
+import { getVerificationToken, verifyUserByEmail } from '@/lib/db/users';
 import bcrypt from 'bcryptjs';
+import { rateLimit } from '@/lib/api/rate-limit';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const limit = rateLimit(`verify-invite:${ip}`, 10, 60 * 1000);
+    if (!limit.ok) return limit.response;
+
     const { token, password } = await req.json();
 
     if (!token || typeof token !== 'string') {
@@ -14,9 +19,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
     }
 
-    const verificationToken = await prisma.verificationToken.findUnique({
-      where: { token },
-    });
+    const verificationToken = await getVerificationToken(token);
 
     if (!verificationToken) {
       return NextResponse.json({ error: 'Invalid or expired verification link.' }, { status: 400 });
@@ -32,20 +35,7 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { email: verificationToken.email },
-        data: {
-          passwordHash,
-          emailVerified: new Date(),
-          onboardingCompleted: true,
-        },
-      }),
-      prisma.verificationToken.update({
-        where: { id: verificationToken.id },
-        data: { usedAt: new Date() },
-      }),
-    ]);
+    await verifyUserByEmail(verificationToken.email, passwordHash, verificationToken.id);
 
     return NextResponse.json({
       message: 'Email verified and password set. You can now log in.',

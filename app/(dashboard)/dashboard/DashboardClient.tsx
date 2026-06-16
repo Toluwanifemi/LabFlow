@@ -26,7 +26,7 @@ interface ActivityItem {
   userName: string;
   actionType: string;
   sampleHumanId: string | null;
-  timestamp: Date;
+  timestamp: string;
 }
 
 interface AttentionItem {
@@ -44,7 +44,7 @@ interface SampleItem {
   sampleType: string;
   source: string;
   currentPhase: string | null;
-  updatedAt: Date;
+  updatedAt: string;
   createdByName: string | null;
 }
 
@@ -54,12 +54,9 @@ interface DashboardClientProps {
   attentionItems: AttentionItem[];
   recentSamples: SampleItem[];
   userName: string;
-  labName: string;
   dateStr: string;
   role: string;
-  userId: string;
 }
-
 
 export function DashboardClient({
   stats: initialStats,
@@ -67,7 +64,6 @@ export function DashboardClient({
   attentionItems: initialAttentionItems,
   recentSamples: initialRecentSamples,
   userName,
-  labName,
   dateStr,
   role,
 }: DashboardClientProps) {

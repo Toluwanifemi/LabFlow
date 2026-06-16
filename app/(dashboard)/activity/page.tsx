@@ -14,6 +14,16 @@ export default async function ActivityPage() {
   }
 
   const logs = await getAuditLogsForLab(session.user.labId);
+  const serializedLogs = logs.map((log) => ({
+    id: log.id,
+    actionType: log.actionType,
+    fieldChanged: log.fieldChanged,
+    oldValue: log.oldValue,
+    newValue: log.newValue,
+    timestamp: log.timestamp.toISOString(),
+    user: log.user,
+    sample: log.sample,
+  }));
 
   return (
     <div className={styles.container}>
@@ -22,7 +32,7 @@ export default async function ActivityPage() {
         <p className={styles.subtitle}>Immutable record of all lab activities.</p>
       </header>
 
-      <ActivityLog logs={logs as any} />
+      <ActivityLog logs={serializedLogs} />
     </div>
   );
 }

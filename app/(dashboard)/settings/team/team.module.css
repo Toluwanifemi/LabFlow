@@ -188,12 +188,6 @@
   display: block;
 }
 
-@media (max-width: 767px) {
-  .addBtnDesktopWrapper {
-    display: none;
-  }
-}
-
 .addBtnMobile {
   display: none;
   background-color: var(--color-primary);
@@ -218,8 +212,123 @@
   transform: scale(0.98);
 }
 
+.cardsContainer {
+  display: none;
+}
+
 @media (max-width: 767px) {
+  .addBtnDesktopWrapper {
+    display: none;
+  }
+
   .addBtnMobile {
     display: inline-flex;
+  }
+
+  .tableContainer {
+    display: none;
+  }
+
+  .cardsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .memberCard {
+    background-color: var(--color-surface-container-low);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: var(--shadow-elevation-small, 0 1px 3px rgba(0, 0, 0, 0.05));
+    transition: transform 0.2s ease;
+  }
+
+  .memberCard:hover {
+    transform: translateY(-2px);
+  }
+
+  .cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .cardNameGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cardName {
+    font-weight: 600;
+    font-size: var(--typography-title-medium-font-size, 16px);
+    color: var(--color-on-surface);
+  }
+
+  .cardInactive {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-error);
+  }
+
+  .cardBody {
+    font-size: var(--typography-body-medium-font-size, 14px);
+    color: var(--color-on-surface-variant);
+  }
+
+  .cardEmail {
+    word-break: break-all;
+    font-family: var(--typography-body-medium-font-family);
+  }
+
+  .cardActions {
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid var(--color-outline-variant);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+
+  .cardActionBtn {
+    flex: 1;
+    min-height: 44px; /* Touch target minimum */
+    border: 1px solid var(--color-outline);
+    border-radius: 8px;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-weight: 600;
+    font-size: var(--typography-label-medium-font-size, 12px);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .cardActionBtn:hover {
+    background-color: var(--color-surface-container-high);
+  }
+
+  .cardActionBtn:active {
+    transform: scale(0.97);
+  }
+
+  .cardActionBtnDanger {
+    border-color: var(--color-outline-variant);
+    color: var(--color-error);
+  }
+
+  .cardActionBtnDanger:hover {
+    background-color: var(--color-error-container);
+    border-color: var(--color-error);
+    color: var(--color-on-error-container);
   }
 }

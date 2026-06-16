@@ -10,11 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No image uploaded' }, { status: 400 });
     }
 
-    console.log('[POST /api/qr/read] Received file:', file.name, file.size, file.type);
-
     const result = await readQRCode(file);
-    
-    console.log('[POST /api/qr/read] goQR Result:', JSON.stringify(result));
     
     const symbol = result.symbol?.[0];
     if (symbol?.data) {

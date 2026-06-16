@@ -26,8 +26,7 @@ export type SampleType = string;
 export type Group = 'CONTROL' | 'NMU' | 'TREATMENT';
 export type Sex = 'MALE' | 'FEMALE';
 export type PhaseType = string;
-export type AnalysisType = 'RNA' | 'HISTOLOGY' | 'PCR' | 'SEQUENCING';
-export type ImageType = 'TUMOR' | 'MICROSCOPY' | 'GEL' | 'OTHER';
+
 
 export interface PhaseEntry {
   phase: string;
@@ -69,63 +68,6 @@ export interface Sample {
   sex: Sex | null;
   age: number | null;
 
-  // Relations
-  phaseHistories?: SamplePhaseHistory[];
-  treatmentLogs?: TreatmentLog[];
-  observationLogs?: ObservationLog[];
-  analysisRecords?: AnalysisRecord[];
-  sampleImages?: SampleImage[];
-}
-
-export interface SamplePhaseHistory {
-  id: string;
-  sampleId: string;
-  phase: PhaseType;
-  notes: string | null;
-  updatedById: string;
-  timestamp: string;
-}
-
-export interface TreatmentLog {
-  id: string;
-  sampleId: string;
-  treatmentType: string;
-  dose: string;
-  route: string;
-  frequency: string;
-  administeredById: string;
-  administeredAt: string;
-  notes: string | null;
-}
-
-export interface ObservationLog {
-  id: string;
-  sampleId: string;
-  tumorPresent: boolean;
-  tumorSizeMm: number | null;
-  bodyWeight: number | null;
-  condition: string | null;
-  observedById: string;
-  observedAt: string;
-  notes: string | null;
-}
-
-export interface AnalysisRecord {
-  id: string;
-  sampleId: string;
-  analysisType: AnalysisType;
-  resultSummary: string | null;
-  performedById: string;
-  performedAt: string;
-}
-
-export interface SampleImage {
-  id: string;
-  sampleId: string;
-  imageUrl: string;
-  imageType: ImageType;
-  uploadedById: string;
-  uploadedAt: string;
 }
 
 export interface AuditLogEntry {

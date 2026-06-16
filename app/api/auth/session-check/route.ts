@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth/config';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/client';
+import { getUserByEmailInsensitive } from '@/lib/db/users';
 
 export async function GET() {
   const session = await auth();
@@ -16,10 +16,7 @@ export async function POST(req: NextRequest) {
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ unverified: false });
     }
-    const user = await prisma.user.findFirst({
-      where: { email: { equals: email.trim().toLowerCase(), mode: 'insensitive' } },
-      select: { emailVerified: true, isActive: true },
-    });
+    const user = await getUserByEmailInsensitive(email.trim().toLowerCase());
     if (user && user.isActive && !user.emailVerified) {
       return NextResponse.json({ unverified: true });
     }

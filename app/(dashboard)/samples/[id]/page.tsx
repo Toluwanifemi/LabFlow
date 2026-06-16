@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@/lib/auth/config';
-import { getSampleById, getSampleBySlug, updateSampleQR, getChildSamples } from '@/lib/db/samples';
-import { prisma } from '@/lib/db/client';
+import { getSampleById, getSampleBySlug, updateSampleQR, getSampleParent } from '@/lib/db/samples';
+import { getChildSamples } from '@/lib/db/replicates';
 import { notFound } from 'next/navigation';
 import { SampleDetail } from '@/components/samples/SampleDetail';
 import { ImageAttachment } from '@/components/samples/ImageAttachment';
@@ -21,13 +21,9 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
 
   const childSamples = await getChildSamples(sample.id, session.user.labId);
 
-  let parentSample = null;
-  if (sample.parentSampleId) {
-    parentSample = await prisma.sample.findUnique({
-      where: { id: sample.parentSampleId },
-      select: { id: true, humanId: true },
-    });
-  }
+  const parentSample = sample.parentSampleId
+    ? await getSampleParent(sample.id, session.user.labId)
+    : null;
 
   if (!sample.qrCodeUrl) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -39,6 +35,27 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
       console.error('[SampleDetailPage] QR self-healing generation failed:', err);
     }
   }
+
+  const serializedSample = {
+    id: sample.id,
+    humanId: sample.humanId,
+    slug: sample.slug,
+    sampleType: sample.sampleType,
+    source: sample.source,
+    collectionDate: sample.collectionDate.toISOString(),
+    description: sample.description,
+    experimentType: sample.experimentType,
+    currentPhase: sample.currentPhase,
+    phaseHistory: (sample.phaseHistory as any) || [],
+    qrCodeUrl: sample.qrCodeUrl,
+    createdBy: {
+      name: sample.createdBy.name,
+    },
+    parentSample: parentSample ? {
+      id: parentSample.id,
+      humanId: parentSample.humanId,
+    } : null,
+  };
 
   return (
     <div className={styles.container}>
@@ -56,7 +73,7 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
       </header>
 
       <SampleDetail
-        sample={{ ...(sample as any), parentSample }}
+        sample={serializedSample}
         childSamples={childSamples.map((c) => ({
           id: c.id,
           humanId: c.humanId,
@@ -66,7 +83,7 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
 
       <ImageAttachment
         sampleId={sample.id}
-        images={(sample as any).images || []}
+        images={(sample.images as any) || []}
       />
     </div>
   );

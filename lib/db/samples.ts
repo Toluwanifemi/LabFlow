@@ -1,6 +1,4 @@
 import { prisma } from './client';
-import { PhaseEntry } from '@/types';
-import { generateChildHumanId, generateChildSlug } from '@/lib/id/generateId';
 
 export async function createSample(data: any, userId: string, labId: string, slug: string, humanId: string) {
   return prisma.sample.create({
@@ -49,57 +47,6 @@ export async function getSamplesForLab(labId: string) {
   });
 }
 
-import { PhaseType as PrismaPhaseType } from '@prisma/client';
-
-function mapStringToPhaseType(phase: string): PrismaPhaseType {
-  const upper = phase.toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
-  const validValues = Object.values(PrismaPhaseType) as string[];
-  if (validValues.includes(upper)) {
-    return upper as PrismaPhaseType;
-  }
-  if (upper.includes('COLLECT')) return PrismaPhaseType.COLLECTION;
-  if (upper.includes('INDUCT')) return PrismaPhaseType.INDUCTION;
-  if (upper.includes('MONITOR')) return PrismaPhaseType.MONITORING;
-  if (upper.includes('TREAT')) return PrismaPhaseType.TREATMENT;
-  if (upper.includes('ANALY')) return PrismaPhaseType.ANALYSIS;
-  if (upper.includes('COMPLET')) return PrismaPhaseType.COMPLETED;
-  if (upper.includes('ARCHIV')) return PrismaPhaseType.ARCHIVED;
-  return PrismaPhaseType.COLLECTION;
-}
-
-export async function addPhaseToSample(sampleId: string, phaseName: string, userName: string, labId: string, userId?: string) {
-  const sample = await prisma.sample.findUnique({ where: { id: sampleId, labId } });
-  if (!sample) throw new Error('Sample not found');
-
-  const history = (sample.phaseHistory as any) || [];
-  const newPhase: PhaseEntry = { phase: phaseName, updatedBy: userName, timestamp: new Date().toISOString() };
-  history.push(newPhase);
-
-  const updated = await prisma.sample.update({
-    where: { id: sampleId, labId },
-    data: {
-      currentPhase: phaseName,
-      phaseHistory: history,
-    },
-  });
-
-  if (userId) {
-    try {
-      await prisma.samplePhaseHistory.create({
-        data: {
-          sampleId,
-          phase: mapStringToPhaseType(phaseName),
-          updatedById: userId,
-        }
-      });
-    } catch (err) {
-      console.error('Failed to create relational SamplePhaseHistory:', err);
-    }
-  }
-
-  return updated;
-}
-
 export async function softDeleteSample(sampleId: string, userId: string, labId: string) {
   return prisma.sample.update({
     where: { id: sampleId, labId },
@@ -108,6 +55,20 @@ export async function softDeleteSample(sampleId: string, userId: string, labId: 
       deletedAt: new Date(),
       deletedById: userId,
     }
+  });
+}
+
+export async function restoreSample(sampleId: string, labId: string) {
+  return prisma.sample.update({
+    where: { id: sampleId, labId },
+    data: { isDeleted: false, deletedAt: null, deletedById: null }
+  });
+}
+
+export async function updateSample(sampleId: string, labId: string, data: Record<string, unknown>) {
+  return prisma.sample.update({
+    where: { id: sampleId, labId },
+    data,
   });
 }
 
@@ -122,110 +83,69 @@ export async function getNextSampleSequence(labId: string, sampleType: string): 
   return count + 1;
 }
 
-export async function getChildSamples(sampleId: string, labId: string) {
+export async function getSamplesByIds(ids: string[], labId: string) {
   return prisma.sample.findMany({
-    where: { parentSampleId: sampleId, labId, isDeleted: false },
-    orderBy: { humanId: 'asc' },
-    include: { createdBy: { select: { name: true } } },
+    where: { id: { in: ids }, labId },
+    select: { id: true, currentPhase: true },
   });
 }
 
-export async function createReplicates(
-  baseHumanId: string,
-  baseSlug: string,
-  replicateCount: number,
-  data: { sampleType: string; source: string; collectionDate: string; description?: string; experimentType?: string },
-  userId: string,
-  labId: string,
-) {
-  const suffixes = 'ABCDEFGHIJ'.split('').slice(0, replicateCount);
-
-  return prisma.$transaction(async (tx) => {
-    const created: any[] = [];
-    let parentId: string | null = null;
-
-    for (const suffix of suffixes) {
-      const humanId = generateChildHumanId(baseHumanId, suffix);
-      let slug = generateChildSlug(baseSlug, suffix);
-      const existingSlug = await tx.sample.findUnique({ where: { slug } });
-      if (existingSlug) {
-        slug = `${slug}-${Math.random().toString(36).slice(2, 5)}`;
-      }
-
-      const sample: any = await tx.sample.create({
-        data: {
-          sampleType: data.sampleType,
-          source: data.source,
-          collectionDate: new Date(data.collectionDate),
-          description: data.description,
-          experimentType: data.experimentType,
-          slug,
-          humanId,
-          parentSampleId: parentId,
-          createdById: userId,
-          labId,
-        },
-      });
-
-      if (!parentId) parentId = sample.id;
-      created.push(sample);
-    }
-
-    return created;
+export async function getSamplesWithoutQR(labId: string) {
+  return prisma.sample.findMany({
+    where: { labId, qrCodeUrl: null, isDeleted: false },
+    select: { id: true },
   });
 }
 
-export async function batchUpdatePhase(
-  sampleIds: string[],
-  phaseName: string,
-  userId: string,
-  userName: string,
-  labId: string,
-) {
-  const results = await prisma.$transaction(async (tx) => {
-    const updated: any[] = [];
-    for (const sampleId of sampleIds) {
-      const sample = await tx.sample.findUnique({ where: { id: sampleId, labId } });
-      if (!sample) continue;
-
-      const history = (sample.phaseHistory as any) || [];
-      const newPhase: PhaseEntry = { phase: phaseName, updatedBy: userName, timestamp: new Date().toISOString() };
-      history.push(newPhase);
-
-      const updatedSample = await tx.sample.update({
-        where: { id: sampleId, labId },
-        data: { currentPhase: phaseName, phaseHistory: history },
-      });
-      updated.push(updatedSample);
-
-      if (userId) {
-        try {
-          await tx.samplePhaseHistory.create({
-            data: { sampleId, phase: mapStringToPhaseType(phaseName), updatedById: userId },
-          });
-        } catch (err) {
-          console.error(`Failed to create SamplePhaseHistory for ${sampleId}:`, err);
-        }
-      }
-    }
-    return updated;
+export async function getSampleParent(sampleId: string, labId: string) {
+  const sample = await prisma.sample.findUnique({
+    where: { id: sampleId, labId },
+    select: { parentSampleId: true },
   });
-
-  return results;
+  if (!sample?.parentSampleId) return null;
+  return prisma.sample.findUnique({
+    where: { id: sample.parentSampleId },
+    select: { id: true, humanId: true },
+  });
 }
 
-export async function getDashboardStats(labId: string) {
-  const totalSamples = await prisma.sample.count({
-    where: { labId, isDeleted: false }
-  });
-  
-  const experimentsPerformed = await prisma.sample.count({
-    where: { 
-      labId, 
+const VALID_PHASES = [
+  'COLLECTION',
+  'INDUCTION',
+  'MONITORING',
+  'TREATMENT',
+  'SAMPLE_COLLECTION',
+  'ANALYSIS',
+  'COMPLETED',
+  'ARCHIVED'
+];
+
+export async function searchSamples(labId: string, query: string) {
+  const phaseTypeEnumMatches = VALID_PHASES.filter((val) =>
+    val.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const orConditions: any[] = [
+    { humanId: { contains: query, mode: 'insensitive' } },
+    { sampleType: { contains: query, mode: 'insensitive' } },
+    { source: { contains: query, mode: 'insensitive' } },
+    { experimentType: { contains: query, mode: 'insensitive' } },
+    { createdBy: { name: { contains: query, mode: 'insensitive' } } },
+  ];
+
+  if (phaseTypeEnumMatches.length > 0) {
+    orConditions.push({ currentPhase: { in: phaseTypeEnumMatches } });
+  }
+
+  return prisma.sample.findMany({
+    where: {
+      labId,
       isDeleted: false,
-      experimentType: { not: null }
-    }
+      OR: orConditions,
+    },
+    include: { createdBy: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' },
   });
-
-  return { totalSamples, experimentsPerformed };
 }
+
+

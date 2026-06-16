@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
+import { getSampleById } from '@/lib/db/samples';
+import { attachImage } from '@/lib/db/sampleImages';
 import { writeAuditLog } from '@/lib/db/audit';
-import { prisma } from '@/lib/db/client';
 import { put } from '@vercel/blob';
+import { getIpAddress } from '@/lib/api/utils';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/tiff'];
 const MAX_SIZE = 10 * 1024 * 1024;
-
-function getIpAddress(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  );
-}
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -51,9 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       );
     }
 
-    const sample = await prisma.sample.findUnique({
-      where: { id: params.id, labId: session.user.labId, isDeleted: false },
-    });
+    const sample = await getSampleById(params.id, session.user.labId);
 
     if (!sample) {
       return NextResponse.json({ error: 'Sample not found' }, { status: 404 });
@@ -74,31 +66,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       url = `data:${file.type};base64,${base64}`;
     }
 
-    const images = (sample.images as any[]) || [];
-    images.push({
+    await attachImage(params.id, session.user.labId, {
       filename: file.name,
       uploaderId: session.user.id,
       uploadTimestamp: new Date().toISOString(),
       url,
     });
-
-    await prisma.sample.update({
-      where: { id: params.id, labId: session.user.labId },
-      data: { images },
-    });
-
-    try {
-      await prisma.sampleImage.create({
-        data: {
-          sampleId: params.id,
-          imageUrl: url,
-          imageType: 'OTHER',
-          uploadedById: session.user.id,
-        }
-      });
-    } catch (err) {
-      console.error('Failed to create relational SampleImage:', err);
-    }
 
     await writeAuditLog({
       userId: session.user.id,

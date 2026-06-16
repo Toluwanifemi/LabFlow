@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { getUsersByLabId, createUser, updateUserRole, deactivateUser, getUserByEmail } from '@/lib/db/users';
+import { getUsersByLabId, createUser, updateUserRole, deactivateUser, getUserByEmail, getUserById, createVerificationToken } from '@/lib/db/users';
 import { writeAuditLog } from '@/lib/db/audit';
-import { prisma } from '@/lib/db/client';
 import { createMemberSchema, updateRoleSchema, removeMemberSchema } from '@/lib/validators/team';
 import { sendInviteEmail } from '@/lib/email/mailer';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { Role } from '@/types';
-
-function getIpAddress(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  );
-}
+import { getIpAddress } from '@/lib/api/utils';
 
 export async function GET(req: NextRequest) {
   try {
@@ -98,13 +90,7 @@ export async function POST(req: NextRequest) {
       const token = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
-      await prisma.verificationToken.create({
-        data: {
-          email: data.email,
-          token,
-          expiresAt,
-        },
-      });
+      await createVerificationToken(data.email, token, expiresAt);
 
       const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth?mode=verify&token=${token}`;
       const sent = await sendInviteEmail(data.email, data.name, session.user.labName || 'your lab', session.user.name || 'An admin', verifyUrl);
@@ -143,7 +129,7 @@ export async function PATCH(req: NextRequest) {
 
     const data = parsed.data;
 
-    const existingUser = await prisma.user.findUnique({ where: { id: data.userId, labId: session.user.labId } });
+    const existingUser = await getUserById(data.userId, session.user.labId);
     const oldRole = existingUser?.role;
 
     const updatedUser = await updateUserRole(data.userId, data.role, session.user.labId);
@@ -200,7 +186,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'You cannot remove yourself.' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId, labId: session.user.labId } });
+    const user = await getUserById(userId, session.user.labId);
     if (!user) {
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }

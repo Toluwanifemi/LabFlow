@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { createSample, getNextSampleSequence, updateSampleQR, getSamplesForLab, getSampleByHumanId, createReplicates } from '@/lib/db/samples';
+import { createSample, getNextSampleSequence, updateSampleQR, getSamplesForLab, getSampleByHumanId, getSampleBySlug } from '@/lib/db/samples';
+import { createReplicates } from '@/lib/db/replicates';
 import { writeAuditLog } from '@/lib/db/audit';
-import { prisma } from '@/lib/db/client';
+import { getUserByEmailWithLab } from '@/lib/db/users';
 import { createSampleSchema } from '@/lib/validators/sample';
 import { generateHumanId, generateSlug, generateSlugWithFallback } from '@/lib/id/generateId';
 import { generateQRCodeUrl } from '@/lib/qr/goqr';
-
-function getIpAddress(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  );
-}
+import { getIpAddress } from '@/lib/api/utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,10 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, labId: true, role: true, isActive: true },
-    });
+    const dbUser = await getUserByEmailWithLab(session.user.email);
 
     if (!dbUser || !dbUser.isActive) {
       return NextResponse.json({ error: 'User not found.' }, { status: 401 });
@@ -51,19 +42,38 @@ export async function POST(req: NextRequest) {
     const { childCount, parentHumanId: _parentHumanId, ...dbData } = data;
 
     if (childCount && childCount > 1) {
-      const seq = await getNextSampleSequence(dbUser.labId, dbData.sampleType);
-      const baseHumanId = generateHumanId(dbData.sampleType, seq);
-      const baseSlug = generateSlug(dbData.sampleType, baseHumanId);
+      let replicates: any[];
+      let replicateAttempts = 0;
+      const maxReplicateAttempts = 3;
+      while (replicateAttempts < maxReplicateAttempts) {
+        try {
+          const seq = await getNextSampleSequence(dbUser.labId, dbData.sampleType);
+          const baseHumanId = generateHumanId(dbData.sampleType, seq);
+          const baseSlug = generateSlug(dbData.sampleType, baseHumanId);
 
-      const replicates = await createReplicates(
-        baseHumanId, baseSlug, childCount, dbData, dbUser.id, dbUser.labId,
-      );
+          replicates = await createReplicates(
+            baseHumanId, baseSlug, childCount, dbData, dbUser.id, dbUser.labId,
+          );
+          break;
+        } catch (err: unknown) {
+          if (
+            err && typeof err === 'object' && 'code' in err &&
+            (err as { code: unknown }).code === 'P2002'
+          ) {
+            replicateAttempts++;
+            if (replicateAttempts >= maxReplicateAttempts) throw err;
+            await new Promise((resolve) => setTimeout(resolve, 50 + Math.random() * 100));
+          } else {
+            throw err;
+          }
+        }
+      }
 
-      for (const r of replicates) {
+      for (const r of replicates!) {
         await writeAuditLog({ userId: dbUser.id, actionType: 'CREATE', sampleId: r.id, ipAddress: getIpAddress(req) });
       }
 
-      const parent = replicates[0];
+      const parent = replicates![0];
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       try {
         const qrCodeUrl = await Promise.race([
@@ -75,7 +85,7 @@ export async function POST(req: NextRequest) {
         console.error('[POST /api/samples] QR generation failed for parent:', err);
       }
 
-      return NextResponse.json({ parent, children: replicates.slice(1) }, { status: 201 });
+      return NextResponse.json({ parent, children: replicates!.slice(1) }, { status: 201 });
     }
 
     let sample;
@@ -89,7 +99,7 @@ export async function POST(req: NextRequest) {
         let slug = generateSlug(dbData.sampleType, humanId);
         let slugAttempts = 0;
         while (slugAttempts < 3) {
-          const existingSlug = await prisma.sample.findUnique({ where: { slug } });
+          const existingSlug = await getSampleBySlug(slug, dbUser.labId);
           if (!existingSlug) break;
           slug = slugAttempts === 0
             ? generateSlugWithFallback(dbData.sampleType, humanId)
@@ -99,8 +109,8 @@ export async function POST(req: NextRequest) {
 
         sample = await createSample(dbData, dbUser.id, dbUser.labId, slug, humanId);
         break;
-      } catch (err: any) {
-        if (err.code === 'P2002') {
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
           attempts++;
           if (attempts >= maxAttempts) throw err;
           await new Promise((resolve) => setTimeout(resolve, 50 + Math.random() * 100));
@@ -154,10 +164,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, labId: true, role: true, isActive: true },
-    });
+    const dbUser = await getUserByEmailWithLab(session.user.email);
 
     if (!dbUser || !dbUser.isActive) {
       return NextResponse.json({ error: 'User not found.' }, { status: 401 });
@@ -176,7 +183,7 @@ export async function GET(req: NextRequest) {
     if (humanIdParam) {
       const sample = await getSampleByHumanId(humanIdParam, dbUser.labId);
       if (!sample) {
-        return NextResponse.json({ error: 'Sample not found' }, { status: 404 });
+        return NextResponse.json({ error: 'This sample does not exist.' }, { status: 404 });
       }
       return NextResponse.json(sample, { status: 200 });
     }

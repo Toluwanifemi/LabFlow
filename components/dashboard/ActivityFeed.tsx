@@ -8,7 +8,7 @@ interface ActivityItem {
   userName: string;
   actionType: string;
   sampleHumanId: string | null;
-  timestamp: Date;
+  timestamp: string;
 }
 
 interface ActivityFeedProps {
@@ -29,7 +29,7 @@ function getActionLabel(actionType: string, sampleHumanId: string | null): strin
   return labels[actionType] || `Action on ${sample}`;
 }
 
-function formatTimeAgo(timestamp: Date): string {
+function formatTimeAgo(timestamp: string): string {
   const now = new Date();
   const diff = now.getTime() - new Date(timestamp).getTime();
   const mins = Math.floor(diff / 60000);

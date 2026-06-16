@@ -294,7 +294,7 @@ These rules define the non-negotiable behaviour of the system. The agent must ne
 - **NEVER** block a sample save due to a goQR failure — queue the QR generation and retry separately
 - **NEVER** auto-resolve offline sync conflicts — always surface them to the user
 
-### AI Rules (if AI features are added)
+### AI Rules
 - **NEVER** save an AI-generated suggestion without explicit human review and confirmation
 - **NEVER** present AI output as factual — always label it as a suggestion
 

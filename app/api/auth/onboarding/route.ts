@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import { prisma } from '@/lib/db/client';
+import { updateLabSettings } from '@/lib/db/labs';
+import { completeUserOnboarding } from '@/lib/db/users';
 import { z } from 'zod';
 
 const onboardingSchema = z.object({
@@ -27,19 +28,11 @@ export async function POST(req: NextRequest) {
 
     const { institution, researchFields, role } = parsed.data;
 
-    await prisma.$transaction([
-      prisma.lab.update({
-        where: { id: session.user.labId },
-        data: { institution, researchFields },
-      }),
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: {
-          ...(role ? { role } : {}),
-          onboardingCompleted: true,
-        },
-      }),
-    ]);
+    await updateLabSettings(session.user.labId, { institution, researchFields });
+    await completeUserOnboarding(session.user.id, {
+      ...(role ? { role } : {}),
+      onboardingCompleted: true,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

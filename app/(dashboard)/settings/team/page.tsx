@@ -176,56 +176,55 @@ export default function TeamPage() {
         </button>
       </div>
 
-      <div className={styles.tableContainer}>
-        {members.length === 0 ? (
-          <div className={styles.noMembers}>No team members found.</div>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr className={styles.tr}>
-                <th className={styles.th}>Name</th>
-                <th className={styles.th}>Role</th>
-                <th className={styles.th}>Email</th>
-                <th className={styles.th} style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((member, index) => (
-                <tr key={member.id} className={styles.tr}>
-                  <td className={styles.td}>
-                    <div className={styles.memberNameContainer}>
-                      <span className={styles.memberName}>{member.name}</span>
-                      {!member.isActive && <span className={styles.inactiveLabel}>(Inactive)</span>}
-                    </div>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={styles.positionText}>
-                      {formatRole(member.role)}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={styles.memberEmail}>{member.email}</span>
-                  </td>
-                  <td className={`${styles.td} ${styles.actionsTd}`}>
-                    <button className={styles.editIconBtn} onClick={() => openEditModal(member)} aria-label="Edit member">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" />
-                      </svg>
-                    </button>
-                    <button className={styles.removeIconBtn} onClick={() => openRemoveModal(member)} aria-label="Remove member">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {members.length === 0 ? (
+        <div className={styles.noMembers}>No team members found.</div>
+      ) : (
+        <div className={styles.cardGrid}>
+          {members.map((member) => (
+            <div key={member.id} className={styles.memberCard}>
+              <div className={styles.cardHeader}>
+                <div className={styles.cardNameGroup}>
+                  <span className={styles.cardName}>{member.name}</span>
+                  {!member.isActive && <span className={styles.cardInactive}>(Inactive)</span>}
+                </div>
+                <Badge variant={member.role === 'ADMIN' || member.role === 'PI' ? 'success' : 'default'}>
+                  {formatRole(member.role)}
+                </Badge>
+              </div>
+              <div className={styles.cardBody}>
+                <span className={styles.cardEmailLabel}>Email</span>
+                <span className={styles.cardEmail}>{member.email}</span>
+              </div>
+              <div className={styles.cardActions}>
+                <button
+                  type="button"
+                  className={styles.cardActionBtn}
+                  onClick={() => openEditModal(member)}
+                  aria-label={`Edit role for ${member.name}`}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" />
+                  </svg>
+                  Edit Role
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.cardActionBtn} ${styles.cardActionBtnDanger}`}
+                  onClick={() => openRemoveModal(member)}
+                  aria-label={`Remove ${member.name}`}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                  </svg>
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Modal
         isOpen={isAddModalOpen}

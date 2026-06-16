@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -71,6 +72,21 @@ export function SidebarNav({ menuOpen, onClose }: { menuOpen?: boolean; onClose?
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const isLoading = status === 'loading';
+
+  useEffect(() => {
+    if (!menuOpen || !onClose) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen, onClose]);
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname.startsWith(href);

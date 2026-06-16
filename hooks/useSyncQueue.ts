@@ -33,6 +33,18 @@ export function useSyncQueue() {
     });
   };
 
+  const checkInternetConnection = async (): Promise<boolean> => {
+    try {
+      await fetch(`/api/auth/session-check?t=${Date.now()}`, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(4000),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const updateQueueCount = useCallback(async () => {
     try {
       const db = await getDB();
@@ -60,6 +72,13 @@ export function useSyncQueue() {
 
   const processQueue = useCallback(async () => {
     if (!isOnline || isSyncing) return;
+
+    // Check actual server reachability (patching leaky navigator.onLine API)
+    const isReachable = await checkInternetConnection();
+    if (!isReachable) {
+      console.warn('[syncQueue] Local network connected, but server is unreachable. Skipping sync.');
+      return;
+    }
 
     setIsSyncing(true);
     try {
@@ -112,13 +131,20 @@ export function useSyncQueue() {
           }
         } catch (fetchError) {
           console.error(`Network error syncing ${item.id}`, fetchError);
-          break; // Stop loop if offline again
+          continue; // Skip failed item, retry on next sync pass
         }
       }
 
       await updateQueueCount();
       if (successCount > 0) {
         showToast({ message: `Synced ${successCount} records.`, type: 'success' });
+      }
+
+      // Retry any pending QR code generations after sync
+      try {
+        await fetch('/api/qr/retry', { method: 'POST' });
+      } catch (qrErr) {
+        console.warn('QR retry after sync failed (non-blocking):', qrErr);
       }
     } catch (error) {
       console.error('Sync process failed', error);

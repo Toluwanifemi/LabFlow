@@ -43,10 +43,8 @@ export default async function DashboardPage() {
         attentionItems={attentionItems}
         recentSamples={recentSamples}
         userName={session.user.name || 'Researcher'}
-        labName={session.user.labName || 'Laboratory'}
         dateStr={dateStr}
         role={role}
-        userId={session.user.id}
       />
     </div>
   );

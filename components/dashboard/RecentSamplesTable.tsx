@@ -10,7 +10,7 @@ interface SampleItem {
   sampleType: string;
   source: string;
   currentPhase: string | null;
-  updatedAt: Date;
+  updatedAt: string;
   createdByName: string | null;
 }
 
@@ -30,7 +30,7 @@ function getPhaseBadgeClass(phase: string | null): string {
   return map[p] || styles.phaseCollection;
 }
 
-function formatDate(d: Date): string {
+function formatDate(d: string): string {
   const date = new Date(d);
   const now = new Date();
   const diff = now.getTime() - date.getTime();

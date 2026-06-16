@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Input } from '@/components/ui/Input';
@@ -21,6 +21,12 @@ function AuthForms() {
     : rawMode === 'reset-password' ? 'reset-password'
     : rawMode === 'verify' ? 'verify'
     : 'login';
+
+  const [currentMode, setCurrentMode] = useState<AuthMode>(mode);
+
+  useEffect(() => {
+    setCurrentMode(mode);
+  }, [mode]);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,14 +59,62 @@ function AuthForms() {
   const [verifyPasswordError, setVerifyPasswordError] = useState('');
   const [verifyConfirmError, setVerifyConfirmError] = useState('');
 
+  const clearFormState = () => {
+    setName('');
+    setEmail('');
+    setPassword('');
+    setLabName('');
+    setSignupStep(1);
+    setNameError('');
+    setEmailError('');
+    setLoginEmailError('');
+    setLoginPasswordError('');
+    setLoginError('');
+    setResetPassword('');
+    setResetConfirmPassword('');
+    setResetPasswordError('');
+    setResetConfirmError('');
+    setVerifyPassword('');
+    setVerifyConfirmPassword('');
+    setVerifyPasswordError('');
+    setVerifyConfirmError('');
+    setForgotSent(false);
+  };
+
+  const clearAllErrors = () => {
+    setNameError('');
+    setEmailError('');
+    setLoginEmailError('');
+    setLoginPasswordError('');
+    setLoginError('');
+    setResetPasswordError('');
+    setResetConfirmError('');
+    setVerifyPasswordError('');
+    setVerifyConfirmError('');
+  };
+
   const switchMode = (newMode: AuthMode) => {
-    const params = newMode === 'login' ? '' : `?mode=${newMode}`;
-    router.replace(`/auth${params}`);
+    clearFormState();
+    setCurrentMode(newMode);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    let valid = true;
+    if (!email.trim()) {
+      setLoginEmailError('This field cannot be empty');
+      valid = false;
+    } else {
+      setLoginEmailError('');
+    }
+    if (!password.trim()) {
+      setLoginPasswordError('This field cannot be empty');
+      valid = false;
+    } else {
+      setLoginPasswordError('');
+    }
+    if (!valid) return;
     setIsLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
@@ -102,13 +156,13 @@ function AuthForms() {
   const handleNext = () => {
     let valid = true;
     if (!name.trim()) {
-      setNameError('Field cannot be empty');
+      setNameError('This field cannot be empty');
       valid = false;
     } else {
       setNameError('');
     }
     if (!email.trim()) {
-      setEmailError('Field cannot be empty');
+      setEmailError('This field cannot be empty');
       valid = false;
     } else {
       setEmailError('');
@@ -182,7 +236,7 @@ function AuthForms() {
     let valid = true;
 
     if (!resetPassword) {
-      setResetPasswordError('This field cannot be empty.');
+      setResetPasswordError('This field cannot be empty');
       valid = false;
     } else if (!/[A-Z]/.test(resetPassword)) {
       setResetPasswordError('Must include an uppercase letter.');
@@ -201,7 +255,7 @@ function AuthForms() {
     }
 
     if (!resetConfirmPassword) {
-      setResetConfirmError('This field cannot be empty.');
+      setResetConfirmError('This field cannot be empty');
       valid = false;
     } else if (resetPassword !== resetConfirmPassword) {
       setResetConfirmError('Passwords do not match');
@@ -237,18 +291,18 @@ function AuthForms() {
     <main className={styles.main}>
       <a href="/" className={styles.logo}>LabFlow</a>
       <div className={styles.card}>
-        {mode === 'login' && (
+        {currentMode === 'login' && (
           <>
             <h1 className={styles.title}>Welcome back</h1>
             <p className={styles.subtitle}>Log in to LabFlow</p>
             {loginError && <div className={styles.errorBox} role="alert">{loginError}</div>}
-            <form onSubmit={handleLogin} className={styles.form}>
+            <form onSubmit={handleLogin} className={styles.form} noValidate>
               <Input
                 label="Email"
                 type="email"
                 value={email}
                 onChange={e => { setEmail(e.target.value); setLoginError(''); if (e.target.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) { setLoginEmailError('Enter a valid email address'); } else { setLoginEmailError(''); } }}
-                onFocus={() => { setLoginEmailError(''); setLoginError(''); }}
+                onFocus={clearAllErrors}
                 onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empty'); }}
                 error={loginEmailError}
                 required
@@ -260,7 +314,7 @@ function AuthForms() {
                 type="password"
                 value={password}
                 onChange={e => { setPassword(e.target.value); setLoginError(''); setLoginPasswordError(''); }}
-                onFocus={() => { setLoginPasswordError(''); setLoginError(''); }}
+                onFocus={clearAllErrors}
                 onBlur={() => { if (!password.trim()) setLoginPasswordError('This field cannot be empty'); }}
                 error={loginPasswordError}
                 required
@@ -276,7 +330,7 @@ function AuthForms() {
           </>
         )}
 
-        {mode === 'signup' && (
+        {currentMode === 'signup' && (
           <>
             <h1 className={styles.title}>Create your Lab</h1>
             <p className={styles.subtitle}>Register for LabFlow</p>
@@ -291,12 +345,12 @@ function AuthForms() {
                 <>
                   <Input label="Enter Full Name" value={name}
                     onChange={e => { setName(e.target.value); setNameError(''); }}
-                    onFocus={() => setNameError('')}
+                    onFocus={clearAllErrors}
                     onBlur={() => { if (!name.trim()) setNameError('This field cannot be empty'); }}
                     required autoFocus error={nameError} />
                   <Input label="Enter Email" type="email" value={email}
                     onChange={e => { setEmail(e.target.value); if (e.target.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) { setEmailError('Enter a valid email address'); } else { setEmailError(''); } }}
-                    onFocus={() => setEmailError('')}
+                    onFocus={clearAllErrors}
                     onBlur={() => { if (!email.trim()) setEmailError('This field cannot be empty'); }}
                     required error={emailError} />
                   <Button type="button" onClick={handleNext} className={styles.submitBtn}>
@@ -313,7 +367,7 @@ function AuthForms() {
                     onChange={e => setLabName(e.target.value)} required />
                   <Input label="Password" type="password" value={password}
                     onChange={e => setPassword(e.target.value)}
-                    onFocus={() => setPasswordFocused(true)}
+                    onFocus={() => { setPasswordFocused(true); clearAllErrors(); }}
                     onBlur={() => setPasswordFocused(false)}
                     required />
                   {passwordFocused && (
@@ -340,7 +394,7 @@ function AuthForms() {
           </>
         )}
 
-        {mode === 'forgot-password' && (
+        {currentMode === 'forgot-password' && (
           <>
             <h1 className={styles.title}>Reset password</h1>
             <p className={styles.subtitle}>We&apos;ll send you a reset link</p>
@@ -358,8 +412,8 @@ function AuthForms() {
                   type="email"
                   value={email}
                   onChange={e => { setEmail(e.target.value); setLoginEmailError(''); }}
-                  onFocus={() => setLoginEmailError('')}
-                  onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empty'); }}
+                   onFocus={clearAllErrors}
+onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empty'); }}
                   error={loginEmailError}
                   required
                   autoFocus
@@ -378,7 +432,7 @@ function AuthForms() {
           </>
         )}
 
-        {mode === 'verify' && (
+        {currentMode === 'verify' && (
           <>
             <h1 className={styles.title}>Set your password</h1>
             <p className={styles.subtitle}>Verify your email and create a new password</p>
@@ -394,7 +448,7 @@ function AuthForms() {
                 e.preventDefault();
                 let valid = true;
                 if (!verifyPassword) {
-                  setVerifyPasswordError('This field cannot be empty.');
+                  setVerifyPasswordError('This field cannot be empty');
                   valid = false;
                 } else if (!/[A-Z]/.test(verifyPassword)) {
                   setVerifyPasswordError('Must include an uppercase letter.');
@@ -412,7 +466,7 @@ function AuthForms() {
                   setVerifyPasswordError('');
                 }
                 if (!verifyConfirmPassword) {
-                  setVerifyConfirmError('This field cannot be empty.');
+                  setVerifyConfirmError('This field cannot be empty');
                   valid = false;
                 } else if (verifyPassword !== verifyConfirmPassword) {
                   setVerifyConfirmError('Passwords do not match');
@@ -451,7 +505,7 @@ function AuthForms() {
                   type="password"
                   value={verifyPassword}
                   onChange={e => setVerifyPassword(e.target.value)}
-                  onFocus={() => { setVerifyPasswordFocused(true); setVerifyPasswordError(''); }}
+                  onFocus={() => { setVerifyPasswordFocused(true); clearAllErrors(); }}
                   onBlur={() => setVerifyPasswordFocused(false)}
                   error={verifyPasswordError}
                   required
@@ -470,7 +524,7 @@ function AuthForms() {
                   type="password"
                   value={verifyConfirmPassword}
                   onChange={e => setVerifyConfirmPassword(e.target.value)}
-                  onFocus={() => setVerifyConfirmError('')}
+                  onFocus={clearAllErrors}
                   error={verifyConfirmError}
                   required
                 />
@@ -482,7 +536,7 @@ function AuthForms() {
           </>
         )}
 
-        {mode === 'reset-password' && (
+        {currentMode === 'reset-password' && (
           <>
             <h1 className={styles.title}>Set new password</h1>
             <p className={styles.subtitle}>Enter your new password below</p>
@@ -500,7 +554,7 @@ function AuthForms() {
                   type="password"
                   value={resetPassword}
                   onChange={e => setResetPassword(e.target.value)}
-                  onFocus={() => { setResetPasswordFocused(true); setResetPasswordError(''); }}
+                  onFocus={() => { setResetPasswordFocused(true); clearAllErrors(); }}
                   onBlur={() => setResetPasswordFocused(false)}
                   error={resetPasswordError}
                   required
@@ -519,7 +573,7 @@ function AuthForms() {
                   type="password"
                   value={resetConfirmPassword}
                   onChange={e => setResetConfirmPassword(e.target.value)}
-                  onFocus={() => setResetConfirmError('')}
+                  onFocus={clearAllErrors}
                   error={resetConfirmError}
                   required
                 />

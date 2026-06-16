@@ -22,7 +22,7 @@ export interface RecentActivityItem {
   userName: string;
   actionType: string;
   sampleHumanId: string | null;
-  timestamp: Date;
+  timestamp: string;
 }
 
 export interface AttentionItem {
@@ -40,7 +40,7 @@ export interface RecentSampleItem {
   sampleType: string;
   source: string;
   currentPhase: string | null;
-  updatedAt: Date;
+  updatedAt: string;
   isDeleted: boolean;
   createdByName: string | null;
 }
@@ -191,7 +191,7 @@ export async function getRecentActivity(labId: string, limit = 10, userId?: stri
     userName: log.user.name,
     actionType: log.actionType,
     sampleHumanId: log.sample?.humanId ?? null,
-    timestamp: log.timestamp,
+    timestamp: log.timestamp.toISOString(),
   }));
 }
 
@@ -262,7 +262,7 @@ export async function getRecentSamples(labId: string, limit = 10, userId?: strin
     sampleType: s.sampleType,
     source: s.source,
     currentPhase: s.currentPhase,
-    updatedAt: s.updatedAt,
+    updatedAt: s.updatedAt.toISOString(),
     isDeleted: s.isDeleted,
     createdByName: s.createdBy.name,
   }));

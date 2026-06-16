@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/client';
+import { createLab } from '@/lib/db/labs';
+import { getUserByEmail, createUser } from '@/lib/db/users';
 import { sendWelcomeEmail } from '@/lib/email/mailer';
 import bcrypt from 'bcryptjs';
+import { Role } from '@/types';
 import { z } from 'zod';
+import { rateLimit } from '@/lib/api/rate-limit';
 
 const signupSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -13,6 +16,10 @@ const signupSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const limit = rateLimit(`signup:${ip}`, 5, 60 * 1000);
+    if (!limit.ok) return limit.response;
+
     const body = await req.json();
     const parsed = signupSchema.safeParse(body);
 
@@ -25,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     const { name, email, password, labName } = parsed.data;
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await getUserByEmail(email);
     if (existingUser) {
       return NextResponse.json(
         { error: 'A user with this email already exists.' },
@@ -35,20 +42,17 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const lab = await prisma.lab.create({
-      data: { name: labName },
-    });
+    const lab = await createLab(labName);
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        role: 'ADMIN',
-        labId: lab.id,
-      },
-      select: { id: true, name: true, email: true, role: true },
-    });
+    const rawUser = await createUser({
+      name,
+      email,
+      passwordHash,
+      role: 'ADMIN' as Role,
+      emailVerified: new Date(),
+    }, lab.id);
+
+    const user = { id: rawUser.id, name: rawUser.name, email: rawUser.email, role: rawUser.role };
 
     sendWelcomeEmail(email, name, labName).catch(err =>
       console.error('[signup] Welcome email failed:', err)

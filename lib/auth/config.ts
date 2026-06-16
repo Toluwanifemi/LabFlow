@@ -35,6 +35,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!isPasswordValid) return null;
 
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        });
+
         return {
           id: user.id,
           email: user.email,

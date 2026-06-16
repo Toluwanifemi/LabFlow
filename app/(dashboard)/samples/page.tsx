@@ -1,11 +1,10 @@
 import { auth } from '@/lib/auth/config';
-import { prisma } from '@/lib/db/client';
+import { getSamplesForLab, searchSamples } from '@/lib/db/samples';
 import { SampleCard } from '@/components/samples/SampleCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import styles from './sampleList.module.css';
-import { PhaseType } from '@prisma/client';
 
 interface SamplesPageProps {
   searchParams: Promise<{ q?: string }>;
@@ -20,34 +19,8 @@ export default async function SamplesPage(props: SamplesPageProps) {
 
   let samples;
   if (q) {
-    // Find matching enum values from search term
-    const phaseTypeEnumMatches = Object.values(PhaseType).filter((val) =>
-      val.toLowerCase().includes(q.toLowerCase())
-    );
-
-    const orConditions: any[] = [
-      { humanId: { contains: q, mode: 'insensitive' } },
-      { sampleType: { contains: q, mode: 'insensitive' } },
-      { source: { contains: q, mode: 'insensitive' } },
-      { experimentType: { contains: q, mode: 'insensitive' } },
-      { createdBy: { name: { contains: q, mode: 'insensitive' } } },
-    ];
-
-    if (phaseTypeEnumMatches.length > 0) {
-      orConditions.push({ currentPhase: { in: phaseTypeEnumMatches } });
-    }
-
-    samples = await prisma.sample.findMany({
-      where: {
-        labId: session.user.labId,
-        isDeleted: false,
-        OR: orConditions,
-      },
-      include: { createdBy: { select: { name: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
+    samples = await searchSamples(session.user.labId, q);
   } else {
-    const { getSamplesForLab } = await import('@/lib/db/samples');
     samples = await getSamplesForLab(session.user.labId);
   }
 
