@@ -6,9 +6,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   labelAction?: React.ReactNode;
   error?: string;
   helperText?: string;
+  suffix?: React.ReactNode;
 }
 
-export function Input({ label, labelAction, error, helperText, className, id, ...props }: InputProps) {
+export function Input({ label, labelAction, error, helperText, suffix, className, id, ...props }: InputProps) {
   const generatedId = useId();
   const inputId = id || generatedId;
   const feedbackId = `${inputId}-feedback`;
@@ -22,13 +23,16 @@ export function Input({ label, labelAction, error, helperText, className, id, ..
         </label>
         {labelAction && <span className={styles.labelAction}>{labelAction}</span>}
       </div>
-      <input
-        id={inputId}
-        aria-describedby={error || helperText ? feedbackId : undefined}
-        aria-invalid={error ? 'true' : undefined}
-        className={`${styles.input} ${error ? styles.inputError : ''} ${hasValue ? styles.inputFilled : ''}`}
-        {...props}
-      />
+      <div className={styles.inputWrapper}>
+        <input
+          id={inputId}
+          aria-describedby={error || helperText ? feedbackId : undefined}
+          aria-invalid={error ? 'true' : undefined}
+          className={`${styles.input} ${error ? styles.inputError : ''} ${hasValue ? styles.inputFilled : ''} ${suffix ? styles.inputWithSuffix : ''}`}
+          {...props}
+        />
+        {suffix && <span className={styles.suffix}>{suffix}</span>}
+      </div>
       {(error || helperText) && (
         <span 
           id={feedbackId} 

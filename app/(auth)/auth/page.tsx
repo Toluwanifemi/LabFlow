@@ -9,6 +9,39 @@ import styles from './auth.module.css';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password' | 'reset-password' | 'verify';
 
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
+function PasswordToggle({ visible, onToggle }: { visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={visible ? 'Hide password' : 'Show password'}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+    >
+      {visible ? <EyeOffIcon /> : <EyeIcon />}
+    </button>
+  );
+}
+
 function AuthForms() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -48,6 +81,13 @@ function AuthForms() {
   const [resetPasswordError, setResetPasswordError] = useState('');
   const [resetConfirmError, setResetConfirmError] = useState('');
 
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showVerifyPassword, setShowVerifyPassword] = useState(false);
+  const [showVerifyConfirmPassword, setShowVerifyConfirmPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
+
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [verifyPasswordFocused, setVerifyPasswordFocused] = useState(false);
   const [resetPasswordFocused, setResetPasswordFocused] = useState(false);
@@ -79,6 +119,12 @@ function AuthForms() {
     setVerifyPasswordError('');
     setVerifyConfirmError('');
     setForgotSent(false);
+    setShowLoginPassword(false);
+    setShowSignupPassword(false);
+    setShowVerifyPassword(false);
+    setShowVerifyConfirmPassword(false);
+    setShowResetPassword(false);
+    setShowResetConfirmPassword(false);
   };
 
   const clearAllErrors = () => {
@@ -311,13 +357,14 @@ function AuthForms() {
               <Input
                 label="Password"
                 labelAction={<a onClick={() => switchMode('forgot-password')} className={styles.forgotLink}>Forgot password?</a>}
-                type="password"
+                type={showLoginPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => { setPassword(e.target.value); setLoginError(''); setLoginPasswordError(''); }}
                 onFocus={clearAllErrors}
                 onBlur={() => { if (!password.trim()) setLoginPasswordError('This field cannot be empty'); }}
                 error={loginPasswordError}
                 required
+                suffix={password ? <PasswordToggle visible={showLoginPassword} onToggle={() => setShowLoginPassword(v => !v)} /> : undefined}
               />
               <Button type="submit" isLoading={isLoading} className={styles.submitBtn}>
                 Log In
@@ -365,11 +412,12 @@ function AuthForms() {
                 <>
                   <Input label="Lab Name" value={labName}
                     onChange={e => setLabName(e.target.value)} required />
-                  <Input label="Password" type="password" value={password}
+                  <Input label="Password" type={showSignupPassword ? 'text' : 'password'} value={password}
                     onChange={e => setPassword(e.target.value)}
                     onFocus={() => { setPasswordFocused(true); clearAllErrors(); }}
                     onBlur={() => setPasswordFocused(false)}
-                    required />
+                    required
+                    suffix={password ? <PasswordToggle visible={showSignupPassword} onToggle={() => setShowSignupPassword(v => !v)} /> : undefined} />
                   {passwordFocused && (
                     <ul className={styles.passwordRules}>
                       {!/[A-Z]/.test(password) && <li>Must include an uppercase letter</li>}
@@ -502,7 +550,7 @@ onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empt
               }} className={styles.form}>
                 <Input
                   label="New Password"
-                  type="password"
+                  type={showVerifyPassword ? 'text' : 'password'}
                   value={verifyPassword}
                   onChange={e => setVerifyPassword(e.target.value)}
                   onFocus={() => { setVerifyPasswordFocused(true); clearAllErrors(); }}
@@ -510,6 +558,7 @@ onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empt
                   error={verifyPasswordError}
                   required
                   autoFocus
+                  suffix={verifyPassword ? <PasswordToggle visible={showVerifyPassword} onToggle={() => setShowVerifyPassword(v => !v)} /> : undefined}
                 />
                 {verifyPasswordFocused && (
                   <ul className={styles.passwordRules}>
@@ -521,12 +570,13 @@ onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empt
                 )}
                 <Input
                   label="Confirm Password"
-                  type="password"
+                  type={showVerifyConfirmPassword ? 'text' : 'password'}
                   value={verifyConfirmPassword}
                   onChange={e => setVerifyConfirmPassword(e.target.value)}
                   onFocus={clearAllErrors}
                   error={verifyConfirmError}
                   required
+                  suffix={verifyConfirmPassword ? <PasswordToggle visible={showVerifyConfirmPassword} onToggle={() => setShowVerifyConfirmPassword(v => !v)} /> : undefined}
                 />
                 <Button type="submit" isLoading={isLoading} className={styles.submitBtn}>
                   Verify and Set Password
@@ -551,7 +601,7 @@ onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empt
               <form noValidate onSubmit={handleResetPassword} className={styles.form}>
                 <Input
                   label="New Password"
-                  type="password"
+                  type={showResetPassword ? 'text' : 'password'}
                   value={resetPassword}
                   onChange={e => setResetPassword(e.target.value)}
                   onFocus={() => { setResetPasswordFocused(true); clearAllErrors(); }}
@@ -559,6 +609,7 @@ onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empt
                   error={resetPasswordError}
                   required
                   autoFocus
+                  suffix={resetPassword ? <PasswordToggle visible={showResetPassword} onToggle={() => setShowResetPassword(v => !v)} /> : undefined}
                 />
                 {resetPasswordFocused && (
                   <ul className={styles.passwordRules}>
@@ -570,12 +621,13 @@ onBlur={() => { if (!email.trim()) setLoginEmailError('This field cannot be empt
                 )}
                 <Input
                   label="Confirm Password"
-                  type="password"
+                  type={showResetConfirmPassword ? 'text' : 'password'}
                   value={resetConfirmPassword}
                   onChange={e => setResetConfirmPassword(e.target.value)}
                   onFocus={clearAllErrors}
                   error={resetConfirmError}
                   required
+                  suffix={resetConfirmPassword ? <PasswordToggle visible={showResetConfirmPassword} onToggle={() => setShowResetConfirmPassword(v => !v)} /> : undefined}
                 />
                 <Button type="submit" isLoading={isLoading} className={styles.submitBtn}>
                   Reset Password
