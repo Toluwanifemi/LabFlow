@@ -36,6 +36,7 @@ model User {
   onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
 
 
+  @@index([labId])
   @@map("users")
 }
 
@@ -100,6 +101,9 @@ model Sample {
   auditLogs       AuditLog[]
 
   @@unique([humanId, labId])
+  @@index([labId, isDeleted])
+  @@index([createdById])
+  @@index([parentSampleId])
   @@map("samples")
 }
 
@@ -118,6 +122,8 @@ model AuditLog {
   sample       Sample?     @relation(fields: [sampleId], references: [id])
   sampleId     String?     @map("sample_id")
 
+  @@index([userId])
+  @@index([sampleId])
   @@map("audit_logs")
 }
 
