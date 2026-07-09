@@ -108,3 +108,50 @@
   color: var(--color-on-surface-variant);
   font-style: italic;
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 16px 0;
+}
+
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  border: 1px solid var(--color-outline-variant);
+  transition: background-color 0.2s, opacity 0.2s;
+  cursor: pointer;
+}
+
+.pageBtn:hover:not(.disabled) {
+  background-color: var(--color-surface-container-highest);
+}
+
+.pageBtn:active:not(.disabled) {
+  opacity: 0.8;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.pageInfo {
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+}

@@ -7,8 +7,6 @@ export interface DashboardStats {
   samplesAddedTodayTrend: number;
   activeExperiments: number;
   activeExperimentsTrend: number;
-  pendingUpdates: number;
-  pendingUpdatesTrend: number;
 }
 
 export interface PhaseDistributionItem {
@@ -65,14 +63,16 @@ export async function getDashboardStats(labId: string, userId?: string): Promise
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-  const staleThreshold = new Date();
-  staleThreshold.setDate(staleThreshold.getDate() - 14);
-
-  const [totalSamples, samplesAddedToday, activeExperiments, pendingUpdates,
-         totalPrev, todayPrev, activePrev, pendingPrev] = await Promise.all([
+  // Fetch all stats for current and previous periods concurrently
+  const [
+    totalSamples,
+    samplesAddedToday,
+    activeExperiments,
+    totalPrev,
+    todayPrev,
+    activePrev,
+  ] = await Promise.all([
+    // Current period stats
     prisma.sample.count({ where: baseWhere }),
     prisma.sample.count({
       where: { ...baseWhere, createdAt: { gte: today } },
@@ -84,35 +84,22 @@ export async function getDashboardStats(labId: string, userId?: string): Promise
         currentPhase: { in: ACTIVE_PHASES },
       },
     }),
-    prisma.sample.count({
-      where: { ...baseWhere, updatedAt: { lt: staleThreshold } },
-    }),
-    // Previous period: total samples 7 days ago
+    // Previous period stats (Trend reference points)
     prisma.sample.count({
       where: { ...baseWhere, createdAt: { lt: today } },
     }),
-    // Yesterday's added samples
     prisma.sample.count({
       where: {
         ...baseWhere,
         createdAt: { gte: yesterday, lt: today },
       },
     }),
-    // Active experiments 7 days ago
     prisma.sample.count({
       where: {
         ...baseWhere,
         experimentType: { not: null },
         currentPhase: { in: ACTIVE_PHASES },
         createdAt: { lt: today },
-      },
-    }),
-    // Pending updates 7 days ago (stale samples created before 14 days ago)
-    prisma.sample.count({
-      where: {
-        ...baseWhere,
-        updatedAt: { lt: staleThreshold },
-        createdAt: { lt: sevenDaysAgo },
       },
     }),
   ]);
@@ -129,8 +116,6 @@ export async function getDashboardStats(labId: string, userId?: string): Promise
     samplesAddedTodayTrend: calcTrend(samplesAddedToday, todayPrev),
     activeExperiments,
     activeExperimentsTrend: calcTrend(activeExperiments, activePrev),
-    pendingUpdates,
-    pendingUpdatesTrend: calcTrend(pendingUpdates, pendingPrev),
   };
 }
 
@@ -144,27 +129,18 @@ export async function getPhaseDistribution(labId: string, userId?: string): Prom
     select: { currentPhase: true },
   });
 
-  const PHASE_ORDER = [
-    'collection',
-    'induction',
-    'monitoring',
-    'treatment',
-    'sample_collection',
-    'analysis',
-    'completed',
-    'archived'
-  ];
+  const PHASE_ORDER = ['collection', 'experiment', 'completion'];
   const counts: Record<string, number> = {};
   let total = 0;
 
   for (const s of samples) {
-    const phase = s.currentPhase || 'collection';
+    const phase = (s.currentPhase || 'Collection').toLowerCase();
     counts[phase] = (counts[phase] || 0) + 1;
     total++;
   }
 
   return PHASE_ORDER.map((phase) => ({
-    phase,
+    phase: phase.charAt(0).toUpperCase() + phase.slice(1),
     count: counts[phase] || 0,
     percentage: total > 0 ? Math.round(((counts[phase] || 0) / total) * 100) : 0,
   }));
@@ -201,18 +177,10 @@ export async function getAttentionItems(labId: string): Promise<AttentionItem[]>
 
   const [missingImageCount, staleSampleCount] = await Promise.all([
     prisma.sample.count({
-      where: {
-        labId,
-        isDeleted: false,
-        images: { equals: [] },
-      },
+      where: { labId, isDeleted: false, images: { equals: [] } },
     }),
     prisma.sample.count({
-      where: {
-        labId,
-        isDeleted: false,
-        updatedAt: { lt: staleThreshold },
-      },
+      where: { labId, isDeleted: false, updatedAt: { lt: staleThreshold } },
     }),
   ]);
 

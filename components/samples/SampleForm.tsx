@@ -1,11 +1,27 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { useSyncQueue } from '@/hooks/useSyncQueue';
 import { useToast } from '@/hooks/useToast';
 import styles from './SampleForm.module.css';
+
+const ALL_SAMPLE_TYPES = [
+  'Blood',
+  'Tissue',
+  'DNA',
+  'RNA',
+  'Serum',
+  'Plasma',
+  'Urine',
+  'Saliva',
+  'Cell Culture',
+  'Feces',
+  'CSF',
+  'Other',
+] as const;
 
 interface SampleFormData {
   sampleType: string;
@@ -32,23 +48,94 @@ export function SampleForm() {
   
   const [errors, setErrors] = useState<Partial<Record<keyof SampleFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [replicatesText, setReplicatesText] = useState('1');
+  const [isCustomType, setIsCustomType] = useState(false);
+  const [customTypeText, setCustomTypeText] = useState('');
+  const [optionalOpen, setOptionalOpen] = useState(false);
+  const [recentSources, setRecentSources] = useState<string[]>([]);
+  const [sourceFocused, setSourceFocused] = useState(false);
+  const sourceBlurRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('labflow_recent_sources');
+      if (stored) setRecentSources(JSON.parse(stored));
+    } catch {}
+  }, []);
+
+  const filteredSources = sourceFocused && formData.source.length >= 0
+    ? recentSources.filter(s =>
+        s.toLowerCase().includes(formData.source.toLowerCase())
+      )
+    : [];
+
+  const saveRecentSource = (source: string) => {
+    const trimmed = source.trim();
+    if (!trimmed) return;
+    const updated = [trimmed, ...recentSources.filter(s => s !== trimmed)].slice(0, 10);
+    setRecentSources(updated);
+    try { localStorage.setItem('labflow_recent_sources', JSON.stringify(updated)); } catch {}
+  };
+
+  const validateField = (field: keyof SampleFormData | 'customType'): string | undefined => {
+    switch (field) {
+      case 'sampleType':
+      case 'customType': {
+        const effectiveType = isCustomType ? customTypeText.trim() : formData.sampleType;
+        if (!effectiveType) return 'This field is required.';
+        return;
+      }
+      case 'source':
+        if (!formData.source.trim()) return 'This field is required.';
+        return;
+      case 'collectionDate':
+        if (!formData.collectionDate.trim()) return 'This field is required.';
+        return;
+      default:
+        return;
+    }
+  };
+
+  const handleBlur = (field: keyof SampleFormData | 'customType') => {
+    const error = validateField(field);
+    setErrors(prev => ({ ...prev, [field === 'customType' ? 'sampleType' : field]: error }));
+  };
+
+  const selectSource = (value: string) => {
+    setFormData(prev => ({ ...prev, source: value }));
+    setErrors(prev => ({ ...prev, source: undefined }));
+    setSourceFocused(false);
+    if (sourceBlurRef.current) clearTimeout(sourceBlurRef.current);
+  };
+
+  const setSampleType = (type: string) => {
+    if (type === 'Other') {
+      setIsCustomType(true);
+      setFormData(prev => ({ ...prev, sampleType: '' }));
+    } else {
+      setIsCustomType(false);
+      setCustomTypeText('');
+      setFormData(prev => ({ ...prev, sampleType: type }));
+    }
+    setErrors(prev => ({ ...prev, sampleType: undefined }));
+  };
 
   const validate = () => {
     const newErrors: any = {};
-    if (!formData.sampleType) newErrors.sampleType = 'This field is required.';
+    const effectiveType = isCustomType ? customTypeText.trim() : formData.sampleType;
+    if (!effectiveType) newErrors.sampleType = 'This field is required.';
     if (!formData.source) newErrors.source = 'This field is required.';
     if (!formData.collectionDate) newErrors.collectionDate = 'This field is required.';
     
-    const countVal = parseInt(replicatesText);
-    if (!replicatesText) {
-      newErrors.childCount = 'Replicates count is required.';
-    } else if (isNaN(countVal) || countVal < 1 || countVal > 10) {
+    if (formData.childCount < 1 || formData.childCount > 10) {
       newErrors.childCount = 'Must be between 1 and 10.';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const getEffectiveSampleType = () => {
+    return isCustomType ? customTypeText.trim() : formData.sampleType;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,8 +144,9 @@ export function SampleForm() {
     
     setIsSubmitting(true);
 
+    const effectiveType = getEffectiveSampleType();
     const payload: Record<string, any> = {
-      sampleType: formData.sampleType.trim(),
+      sampleType: effectiveType,
       source: formData.source.trim(),
       collectionDate: formData.collectionDate.trim(),
       description: formData.description?.trim() || undefined,
@@ -68,6 +156,7 @@ export function SampleForm() {
 
     try {
       if (!isOnline) {
+        saveRecentSource(formData.source);
         const localId = `local-${Math.random().toString(36).substring(2, 9)}`;
         await addToQueue({
           id: localId,
@@ -96,6 +185,7 @@ export function SampleForm() {
         return;
       }
 
+      saveRecentSource(formData.source);
       if (data.children) {
         showToast({ message: `${data.children.length + 1} samples saved (${data.parent.humanId} + ${data.children.length} replicates).`, type: 'success' });
         router.push(`/samples/${data.parent.id}`);
@@ -122,63 +212,154 @@ export function SampleForm() {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <Input
-        label="Sample Type"
-        value={formData.sampleType}
-        onChange={e => setFormData({ ...formData, sampleType: e.target.value })}
-        error={errors.sampleType}
-        placeholder="e.g. Blood, Tissue"
-      />
-      <Input
-        label="Source"
-        value={formData.source}
-        onChange={e => setFormData({ ...formData, source: e.target.value })}
-        error={errors.source}
-        placeholder="e.g. Patient A, Mouse 1"
-      />
+      {isCustomType ? (
+        <Input
+          label="Sample Type"
+          value={customTypeText}
+          onChange={e => {
+            setCustomTypeText(e.target.value);
+            setErrors(prev => ({ ...prev, sampleType: undefined }));
+          }}
+          onBlur={() => handleBlur('customType')}
+          placeholder="Type custom sample type..."
+          error={errors.sampleType}
+        />
+      ) : (
+        <Select
+          label="Sample Type"
+          value={formData.sampleType}
+          onChange={e => setSampleType(e.target.value)}
+          onBlur={() => handleBlur('sampleType')}
+          error={errors.sampleType}
+        >
+          <option value="">Select type…</option>
+          {ALL_SAMPLE_TYPES.map(type => (
+            <option key={type} value={type}>{type}</option>
+          ))}
+        </Select>
+      )}
+      <div className={styles.sourceGroup}>
+        <Input
+          label="Source"
+          value={formData.source}
+          onChange={e => {
+            setFormData({ ...formData, source: e.target.value });
+            setErrors(prev => ({ ...prev, source: undefined }));
+          }}
+          onFocus={() => {
+            if (sourceBlurRef.current) clearTimeout(sourceBlurRef.current);
+            setSourceFocused(true);
+          }}
+          onBlur={() => {
+            handleBlur('source');
+            sourceBlurRef.current = setTimeout(() => setSourceFocused(false), 180);
+          }}
+          error={errors.source}
+          placeholder="e.g. Patient A, Mouse 1"
+        />
+        {filteredSources.length > 0 && (
+          <div className={styles.sourceDropdown}>
+            {filteredSources.map(s => (
+              <button
+                key={s}
+                type="button"
+                className={styles.sourceOption}
+                onMouseDown={e => {
+                  e.preventDefault();
+                  selectSource(s);
+                }}
+              >
+                <svg className={styles.sourceOptionIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <Input
         label="Collection Date"
         type="date"
         value={formData.collectionDate}
         onChange={e => setFormData({ ...formData, collectionDate: e.target.value })}
+        onBlur={() => handleBlur('collectionDate')}
         error={errors.collectionDate}
       />
-      <Input
-        label="Replicates (1–10)"
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        value={replicatesText}
-        onChange={e => {
-          const val = e.target.value.replace(/[^0-9]/g, '');
-          setReplicatesText(val);
-          if (val) {
-            const num = parseInt(val);
-            if (!isNaN(num) && num >= 1 && num <= 10) {
-              setFormData(prev => ({ ...prev, childCount: num }));
-            }
-          }
-        }}
-        onBlur={() => {
-          const val = Math.max(1, Math.min(10, parseInt(replicatesText) || 1));
-          setReplicatesText(String(val));
-          setFormData(prev => ({ ...prev, childCount: val }));
-        }}
-        error={errors.childCount}
-      />
+      <div className={styles.stepperGroup}>
+        <label className={styles.stepperLabel}>Replicates</label>
+        <div className={styles.stepper}>
+          <button
+            type="button"
+            className={`${styles.stepperBtn} ${formData.childCount <= 1 ? styles.stepperBtnDisabled : ''}`}
+            disabled={formData.childCount <= 1}
+            onClick={() => {
+              if (formData.childCount > 1) {
+                setFormData(prev => ({ ...prev, childCount: prev.childCount - 1 }));
+                setErrors(prev => ({ ...prev, childCount: undefined }));
+              }
+            }}
+            aria-label="Decrease replicates"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M5 12h14" />
+            </svg>
+          </button>
+          <span className={styles.stepperValue}>{formData.childCount}</span>
+          <button
+            type="button"
+            className={`${styles.stepperBtn} ${formData.childCount >= 10 ? styles.stepperBtnDisabled : ''}`}
+            disabled={formData.childCount >= 10}
+            onClick={() => {
+              if (formData.childCount < 10) {
+                setFormData(prev => ({ ...prev, childCount: prev.childCount + 1 }));
+                setErrors(prev => ({ ...prev, childCount: undefined }));
+              }
+            }}
+            aria-label="Increase replicates"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M5 12h14M12 5v14" />
+            </svg>
+          </button>
+        </div>
+        {errors.childCount && <span className={styles.stepperError}>{errors.childCount}</span>}
+      </div>
       
-      <div className={styles.optionalSection}>
-        <h3 className={styles.optionalTitle}>Optional Fields</h3>
-        <Input
-          label="Description"
-          value={formData.description}
-          onChange={e => setFormData({ ...formData, description: e.target.value })}
-        />
-        <Input
-          label="Experiment Type"
-          value={formData.experimentType}
-          onChange={e => setFormData({ ...formData, experimentType: e.target.value })}
-        />
+      <div className={`${styles.optionalSection} ${optionalOpen ? styles.optionalSectionOpen : ''}`}>
+        <button
+          type="button"
+          className={styles.optionalToggle}
+          onClick={() => setOptionalOpen(prev => !prev)}
+        >
+          <span className={styles.optionalTitle}>Optional Fields</span>
+          <svg
+            className={`${styles.optionalChevron} ${optionalOpen ? styles.optionalChevronOpen : ''}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        {optionalOpen && (
+          <div className={styles.optionalContent}>
+            <Input
+              label="Description"
+              value={formData.description}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+            />
+            <Input
+              label="Experiment Type"
+              value={formData.experimentType}
+              onChange={e => setFormData({ ...formData, experimentType: e.target.value })}
+            />
+          </div>
+        )}
       </div>
 
       <Button type="submit" isLoading={isSubmitting} className={styles.submitBtn}>

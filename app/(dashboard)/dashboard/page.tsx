@@ -4,6 +4,7 @@ import {
   getRecentActivity,
   getAttentionItems,
   getRecentSamples,
+  getPhaseDistribution,
 } from '@/lib/db/dashboard';
 import { DashboardClient } from './DashboardClient';
 import styles from './page.module.css';
@@ -20,20 +21,13 @@ export default async function DashboardPage() {
   const isStudent = role === 'STUDENT';
   const userId = isStudent ? session.user.id : undefined;
 
-  const [stats, recentActivity, attentionItems, recentSamples] = await Promise.all([
+  const [stats, recentActivity, attentionItems, recentSamples, phaseDistribution] = await Promise.all([
     getDashboardStats(labId, userId),
     getRecentActivity(labId, 10, userId),
     isStudent ? Promise.resolve([]) : getAttentionItems(labId),
     getRecentSamples(labId, 10, userId),
+    getPhaseDistribution(labId, userId),
   ]);
-
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 
   return (
     <div className={styles.container}>
@@ -42,8 +36,8 @@ export default async function DashboardPage() {
         recentActivity={recentActivity}
         attentionItems={attentionItems}
         recentSamples={recentSamples}
+        phaseDistribution={phaseDistribution}
         userName={session.user.name || 'Researcher'}
-        dateStr={dateStr}
         role={role}
       />
     </div>

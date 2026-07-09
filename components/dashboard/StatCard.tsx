@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import styles from './StatCard.module.css';
 
 interface StatCardProps {
@@ -5,9 +6,11 @@ interface StatCardProps {
   value: number;
   trend?: number;
   invertTrendColor?: boolean;
+  variant?: 'default' | 'warning';
+  href?: string;
 }
 
-export function StatCard({ title, value, trend, invertTrendColor }: StatCardProps) {
+export function StatCard({ title, value, trend, invertTrendColor, variant = 'default', href }: StatCardProps) {
   const hasTrend = trend !== undefined;
 
   const trendDirection = hasTrend
@@ -22,8 +25,8 @@ export function StatCard({ title, value, trend, invertTrendColor }: StatCardProp
     ? styles.trendNeutral
     : isGood ? styles.trendUp : styles.trendDown;
 
-  return (
-    <div className={styles.card}>
+  const card = (
+    <div className={`${styles.card} ${variant === 'warning' ? styles.warning : ''}`}>
       <div className={styles.header}>
         <span className={styles.title}>{title}</span>
         {trendDirection && (
@@ -50,4 +53,14 @@ export function StatCard({ title, value, trend, invertTrendColor }: StatCardProp
       <p className={styles.value}>{value.toLocaleString()}</p>
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className={styles.link}>
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }

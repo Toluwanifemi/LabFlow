@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { getAuditLogsForLab } from '@/lib/db/audit';
+import { getAuditLogsForLab, countAuditLogsForLab } from '@/lib/db/audit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,8 +12,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
     }
 
-    const logs = await getAuditLogsForLab(session.user.labId);
-    return NextResponse.json(logs, { status: 200 });
+    const { searchParams } = new URL(req.url);
+    const page = Number(searchParams.get('page')) || 1;
+    const limit = Number(searchParams.get('limit')) || 25;
+
+    const [logs, total] = await Promise.all([
+      getAuditLogsForLab(session.user.labId, page, limit),
+      countAuditLogsForLab(session.user.labId),
+    ]);
+    return NextResponse.json({ data: logs, total, page, limit }, { status: 200 });
   } catch (error) {
     console.error('[GET /api/audit]', error);
     return NextResponse.json({ error: 'Something went wrong. Please try again later.' }, { status: 500 });

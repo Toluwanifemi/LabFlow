@@ -10,6 +10,14 @@ export async function GET() {
   return NextResponse.json({ ok: true });
 }
 
+export async function HEAD() {
+  const session = await auth();
+  if (!session?.user) {
+    return new Response(null, { status: 401 });
+  }
+  return new Response(null, { status: 200 });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();

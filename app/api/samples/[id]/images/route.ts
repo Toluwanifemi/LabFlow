@@ -52,19 +52,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-    let url: string;
-
-    if (blobToken) {
-      const blob = await put(file.name, file, {
-        access: 'public',
-        token: blobToken,
-      });
-      url = blob.url;
-    } else {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const base64 = buffer.toString('base64');
-      url = `data:${file.type};base64,${base64}`;
+    if (!blobToken) {
+      return NextResponse.json(
+        { error: 'Image storage is not configured. Please contact your administrator.' },
+        { status: 500 }
+      );
     }
+
+    const blob = await put(file.name, file, {
+      access: 'public',
+      token: blobToken,
+    });
+    const url = blob.url;
 
     await attachImage(params.id, session.user.labId, {
       filename: file.name,

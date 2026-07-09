@@ -246,6 +246,7 @@
   --color-on-warning: hsl(0, 0%, 100%);
   --color-warning-container: hsl(45, 100%, 90%);
   --color-on-warning-container: hsl(35, 100%, 18%);
+  --color-experiment: hsl(44, 100%, 66%);
 }
 
 /* ==================================================
@@ -290,6 +291,7 @@
   --color-on-warning: hsl(0, 0%, 100%);
   --color-warning-container: hsl(45, 100%, 90%);
   --color-on-warning-container: hsl(35, 100%, 18%);
+  --color-experiment: hsl(20, 100%, 66%);
 }
 
 /* ==================================================
@@ -334,6 +336,7 @@
   --color-on-warning: hsl(35, 100%, 18%);
   --color-warning-container: hsl(35, 100%, 28%);
   --color-on-warning-container: hsl(45, 100%, 90%);
+  --color-experiment: hsl(20, 100%, 66%);
 }
 
 /* ==================================================
@@ -379,5 +382,6 @@
     --color-on-warning: hsl(35, 100%, 18%);
     --color-warning-container: hsl(35, 100%, 28%);
     --color-on-warning-container: hsl(45, 100%, 90%);
+    --color-experiment: hsl(20, 100%, 66%);
   }
 }

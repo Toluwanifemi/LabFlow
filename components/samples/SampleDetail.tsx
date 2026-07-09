@@ -6,10 +6,13 @@ import { QRDisplay } from '@/components/qr/QRDisplay';
 import { PhaseTracker } from '@/components/samples/PhaseTracker';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
 import { useToast } from '@/hooks/useToast';
 import { usePermissions } from '@/hooks/usePermissions';
 import styles from './SampleDetail.module.css';
 import type { PhaseEntry } from '@/types';
+
+const BATCH_PHASES = ['Collection', 'Experiment', 'Completion'] as const;
 
 interface SampleDetailProps {
   sample: {
@@ -40,7 +43,8 @@ export function SampleDetail({ sample, childSamples }: SampleDetailProps) {
   const { hasPermission } = usePermissions();
 
   const [selectedChildren, setSelectedChildren] = useState<Set<string>>(new Set());
-  const [batchPhase, setBatchPhase] = useState('');
+  const [batchPhase, setBatchPhase] = useState<(typeof BATCH_PHASES)[number]>('Collection');
+  const [batchExperimentName, setBatchExperimentName] = useState('');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
 
@@ -54,16 +58,19 @@ export function SampleDetail({ sample, childSamples }: SampleDetailProps) {
   };
 
   const handleBatchUpdate = async () => {
-    if (!batchPhase.trim() || selectedChildren.size === 0) return;
+    if (batchPhase === 'Experiment' && !batchExperimentName.trim()) return;
     setIsBatchSubmitting(true);
     try {
+      const body: Record<string, unknown> = {
+        sampleIds: Array.from(selectedChildren),
+        phaseName: batchPhase,
+      };
+      if (batchPhase === 'Experiment') body.experimentName = batchExperimentName.trim();
+
       const res = await fetch('/api/samples/phases/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sampleIds: Array.from(selectedChildren),
-          phaseName: batchPhase.trim(),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -71,9 +78,13 @@ export function SampleDetail({ sample, childSamples }: SampleDetailProps) {
         throw new Error(data.error || 'Batch update failed');
       }
 
-      showToast({ message: `Phase updated for ${selectedChildren.size} sample(s).`, type: 'success' });
+      const displayName = batchPhase === 'Experiment'
+        ? `Experiment — ${batchExperimentName.trim()}`
+        : batchPhase;
+      showToast({ message: `Phase updated for ${selectedChildren.size} sample(s) to ${displayName}.`, type: 'success' });
       setIsBatchModalOpen(false);
-      setBatchPhase('');
+      setBatchPhase('Collection');
+      setBatchExperimentName('');
       setSelectedChildren(new Set());
       router.refresh();
     } catch (err) {
@@ -120,6 +131,7 @@ export function SampleDetail({ sample, childSamples }: SampleDetailProps) {
           sampleId={sample.id}
           currentPhase={sample.currentPhase}
           phaseHistory={sample.phaseHistory}
+          experimentType={sample.experimentType}
         />
 
         {childSamples && childSamples.length > 0 && (
@@ -148,16 +160,34 @@ export function SampleDetail({ sample, childSamples }: SampleDetailProps) {
 
             {hasPermission('update_phase') && selectedChildren.size > 0 && (
               <div className={styles.batchActions}>
-                <input
-                  className={styles.batchInput}
-                  placeholder="New phase name"
-                  value={batchPhase}
-                  onChange={(e) => setBatchPhase(e.target.value)}
-                  aria-label="New phase name"
-                />
-                <Button size="small" onClick={() => setIsBatchModalOpen(true)}>
-                  Update {selectedChildren.size}
-                </Button>
+                <div className={styles.batchPhaseSelect}>
+                  {BATCH_PHASES.map((p) => (
+                    <label key={p} className={`${styles.batchRadio} ${batchPhase === p ? styles.batchRadioActive : ''}`}>
+                      <input
+                        type="radio"
+                        name="batchPhase"
+                        value={p}
+                        checked={batchPhase === p}
+                        onChange={() => setBatchPhase(p)}
+                      />
+                      {p}
+                    </label>
+                  ))}
+                </div>
+                {batchPhase === 'Experiment' && (
+                  <input
+                    className={styles.batchInput}
+                    placeholder="Experiment name"
+                    value={batchExperimentName}
+                    onChange={(e) => setBatchExperimentName(e.target.value)}
+                    aria-label="Experiment name"
+                  />
+                )}
+                <div className={styles.batchActionsRow}>
+                  <Button size="small" onClick={() => setIsBatchModalOpen(true)}>
+                    Update {selectedChildren.size}
+                  </Button>
+                </div>
               </div>
             )}
           </section>
@@ -182,7 +212,11 @@ export function SampleDetail({ sample, childSamples }: SampleDetailProps) {
           onClick: () => setIsBatchModalOpen(false),
         }}
       >
-        <p>Set phase to &ldquo;{batchPhase}&rdquo; for {selectedChildren.size} sample(s)? This cannot be undone.</p>
+        {batchPhase === 'Experiment' && batchExperimentName.trim() ? (
+          <p>Set phase to &ldquo;Experiment &mdash; {batchExperimentName.trim()}&rdquo; for {selectedChildren.size} sample(s)? This cannot be undone.</p>
+        ) : (
+          <p>Set phase to &ldquo;{batchPhase}&rdquo; for {selectedChildren.size} sample(s)? This cannot be undone.</p>
+        )}
       </Modal>
     </div>
   );

@@ -85,7 +85,6 @@ export async function POST(req: NextRequest) {
     };
 
     // Generate verification token and send invite email
-    let emailWarning: string | null = null;
     try {
       const token = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
@@ -93,16 +92,14 @@ export async function POST(req: NextRequest) {
       await createVerificationToken(data.email, token, expiresAt);
 
       const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth?mode=verify&token=${token}`;
-      const sent = await sendInviteEmail(data.email, data.name, session.user.labName || 'your lab', session.user.name || 'An admin', verifyUrl);
-      if (!sent) {
-        emailWarning = 'Member added but invite email could not be sent. Check your SMTP configuration.';
-      }
-    } catch (emailErr) {
-      console.error('[POST /api/team] Failed to send invite email:', emailErr);
-      emailWarning = 'Member added but invite email could not be sent. Check server logs for details.';
+      sendInviteEmail(data.email, data.name, session.user.labName || 'your lab', session.user.name || 'An admin', verifyUrl).catch((emailErr) => {
+        console.error('[POST /api/team] Failed to send invite email:', emailErr);
+      });
+    } catch (err) {
+      console.error('[POST /api/team] Failed to generate verify token:', err);
     }
 
-    return NextResponse.json({ ...safeUser, emailWarning }, { status: emailWarning ? 201 : 201 });
+    return NextResponse.json(safeUser, { status: 201 });
 
   } catch (error) {
     console.error('[POST /api/team]', error);

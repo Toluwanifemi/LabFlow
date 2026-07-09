@@ -19,7 +19,7 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
     if (!sample) return notFound();
   }
 
-  const childSamples = await getChildSamples(sample.id, session.user.labId);
+  const childSamples = await getChildSamples(sample.id, session.user.labId, 50);
 
   const parentSample = sample.parentSampleId
     ? await getSampleParent(sample.id, session.user.labId)

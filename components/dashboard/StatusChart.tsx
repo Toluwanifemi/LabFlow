@@ -12,11 +12,9 @@ interface StatusChartProps {
 }
 
 const PHASE_COLORS: Record<string, string> = {
-  Collection: '#2563EB',
-  Processing: '#F59E0B',
-  Analysis: '#8B5CF6',
-  Completed: '#16A34A',
-  Archived: '#6B7280',
+  Collection: 'var(--color-secondary)',
+  Experiment: 'var(--color-experiment)',
+  Completion: 'var(--color-tertiary)',
 };
 
 export function StatusChart({ phases }: StatusChartProps) {
@@ -35,7 +33,7 @@ export function StatusChart({ phases }: StatusChartProps) {
       {phases.map((p) => (
         <div key={p.phase} className={styles.row}>
           <div className={styles.labelRow}>
-            <span className={styles.dot} style={{ backgroundColor: PHASE_COLORS[p.phase] || '#999' }} />
+            <span className={styles.dot}             style={{ backgroundColor: PHASE_COLORS[p.phase] || 'var(--color-outline)' }} />
             <span className={styles.phaseName}>{p.phase}</span>
             <span className={styles.count}>{p.count}</span>
             <span className={styles.percentage}>{p.percentage}%</span>
@@ -45,7 +43,7 @@ export function StatusChart({ phases }: StatusChartProps) {
               className={styles.barFill}
               style={{
                 width: `${p.percentage}%`,
-                backgroundColor: PHASE_COLORS[p.phase] || '#999',
+                backgroundColor: PHASE_COLORS[p.phase] || 'var(--color-outline)',
               }}
             />
           </div>

@@ -6,6 +6,7 @@ import {
   getRecentActivity,
   getAttentionItems,
   getRecentSamples,
+  getPhaseDistribution,
 } from '@/lib/db/dashboard';
 
 export async function GET(req: NextRequest) {
@@ -25,11 +26,12 @@ export async function GET(req: NextRequest) {
     const activityLimit = Math.min(Number(searchParams.get('activityLimit')) || 10, 50);
     const sampleLimit = Math.min(Number(searchParams.get('sampleLimit')) || 10, 50);
 
-    const [stats, recentActivity, attentionItems, recentSamples] = await Promise.all([
+    const [stats, recentActivity, attentionItems, recentSamples, phaseDistribution] = await Promise.all([
       getDashboardStats(labId, userId),
       getRecentActivity(labId, activityLimit, userId),
       isStudent ? Promise.resolve([]) : getAttentionItems(labId),
       getRecentSamples(labId, sampleLimit, userId),
+      getPhaseDistribution(labId, userId),
     ]);
 
     return NextResponse.json({
@@ -37,6 +39,7 @@ export async function GET(req: NextRequest) {
       recentActivity,
       attentionItems: isStudent ? [] : attentionItems,
       recentSamples,
+      phaseDistribution,
       role,
     });
   } catch (error) {

@@ -28,11 +28,22 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { sampleIds, phaseName } = body;
+    const { sampleIds, phaseName, experimentName } = body;
 
-    if (!Array.isArray(sampleIds) || sampleIds.length === 0 || !phaseName?.trim()) {
+    const PREDEFINED_PHASES = ['Collection', 'Experiment', 'Completion'];
+    if (
+      !Array.isArray(sampleIds) || sampleIds.length === 0 ||
+      !phaseName?.trim() || !PREDEFINED_PHASES.includes(phaseName)
+    ) {
       return NextResponse.json(
-        { error: 'Invalid input. Provide sampleIds array and phaseName.' },
+        { error: 'Invalid input. Provide sampleIds array and a valid phaseName.' },
+        { status: 400 }
+      );
+    }
+
+    if (phaseName === 'Experiment' && !experimentName?.trim()) {
+      return NextResponse.json(
+        { error: 'Experiment name is required when phase is Experiment.' },
         { status: 400 }
       );
     }
@@ -42,7 +53,10 @@ export async function POST(req: NextRequest) {
 
     const updated = await batchUpdatePhase(
       sampleIds, phaseName.trim(), dbUser.id, dbUser.name, dbUser.labId,
+      { experimentName: experimentName?.trim() },
     );
+
+    const auditNewValue = experimentName?.trim() ? `Experiment — ${experimentName.trim()}` : phaseName.trim();
 
     for (const sample of updated) {
       await writeAuditLog({
@@ -51,7 +65,7 @@ export async function POST(req: NextRequest) {
         sampleId: sample.id,
         fieldChanged: 'currentPhase',
         oldValue: oldPhaseMap.get(sample.id) ?? null,
-        newValue: phaseName.trim(),
+        newValue: auditNewValue,
         ipAddress: getIpAddress(req),
       });
     }

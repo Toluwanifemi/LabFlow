@@ -30,7 +30,7 @@ export default function TeamPage() {
   const [userToRemove, setUserToRemove] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -65,10 +65,14 @@ export default function TeamPage() {
 
   useEffect(() => {
     fetchTeam();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAddMember = async () => {
+    if (password.length < 8) {
+      showToast({ message: 'Password must be at least 8 characters.', type: 'error' });
+      return;
+    }
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/team', {
@@ -85,7 +89,12 @@ export default function TeamPage() {
         fetchTeam();
       } else {
         const err = await res.json();
-        showToast({ message: err.error || 'Failed to add member.', type: 'error' });
+        let errorMsg = err.error || 'Failed to add member.';
+        if (err.details?.fieldErrors) {
+          const firstErr = Object.values(err.details.fieldErrors).flat()[0];
+          if (firstErr) errorMsg = String(firstErr);
+        }
+        showToast({ message: errorMsg, type: 'error' });
       }
     } catch (e) {
       showToast({ message: 'An error occurred.', type: 'error' });
@@ -179,51 +188,110 @@ export default function TeamPage() {
       {members.length === 0 ? (
         <div className={styles.noMembers}>No team members found.</div>
       ) : (
-        <div className={styles.cardGrid}>
-          {members.map((member) => (
-            <div key={member.id} className={styles.memberCard}>
-              <div className={styles.cardHeader}>
-                <div className={styles.cardNameGroup}>
-                  <span className={styles.cardName}>{member.name}</span>
-                  {!member.isActive && <span className={styles.cardInactive}>(Inactive)</span>}
+        <>
+          {/* Desktop Table View */}
+          <div className={styles.tableContainer}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.th}>Name</th>
+                  <th className={styles.th}>Email</th>
+                  <th className={styles.th}>Role</th>
+                  <th className={styles.th + ' ' + styles.actionsTd}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => (
+                  <tr key={member.id} className={styles.tr}>
+                    <td className={styles.td}>
+                      <div className={styles.memberNameContainer}>
+                        <span className={styles.memberName}>{member.name}</span>
+                        {!member.isActive && <span className={styles.inactiveLabel}>(Inactive)</span>}
+                      </div>
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.memberEmail}>{member.email}</span>
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.positionText}>{formatRole(member.role)}</span>
+                    </td>
+                    <td className={styles.td + ' ' + styles.actionsTd}>
+                      <button
+                        type="button"
+                        className={styles.editIconBtn}
+                        onClick={() => openEditModal(member)}
+                        aria-label={`Edit role for ${member.name}`}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.removeIconBtn}
+                        onClick={() => openRemoveModal(member)}
+                        aria-label={`Remove ${member.name}`}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className={styles.cardsContainer}>
+            {members.map((member) => (
+              <div key={member.id} className={styles.memberCard}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.cardNameGroup}>
+                    <span className={styles.cardName}>{member.name}</span>
+                    {!member.isActive && <span className={styles.cardInactive}>(Inactive)</span>}
+                  </div>
+                  <Badge variant={member.role === 'ADMIN' || member.role === 'PI' ? 'success' : 'default'}>
+                    {formatRole(member.role)}
+                  </Badge>
                 </div>
-                <Badge variant={member.role === 'ADMIN' || member.role === 'PI' ? 'success' : 'default'}>
-                  {formatRole(member.role)}
-                </Badge>
+                <div className={styles.cardBody}>
+                  <span style={{ fontWeight: '500' }}>Email: </span>
+                  <span className={styles.cardEmail}>{member.email}</span>
+                </div>
+                <div className={styles.cardActions}>
+                  <button
+                    type="button"
+                    className={styles.cardActionBtn}
+                    onClick={() => openEditModal(member)}
+                    aria-label={`Edit role for ${member.name}`}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" />
+                    </svg>
+                    Edit Role
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.cardActionBtn} ${styles.cardActionBtnDanger}`}
+                    onClick={() => openRemoveModal(member)}
+                    aria-label={`Remove ${member.name}`}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    </svg>
+                    Remove
+                  </button>
+                </div>
               </div>
-              <div className={styles.cardBody}>
-                <span className={styles.cardEmailLabel}>Email</span>
-                <span className={styles.cardEmail}>{member.email}</span>
-              </div>
-              <div className={styles.cardActions}>
-                <button
-                  type="button"
-                  className={styles.cardActionBtn}
-                  onClick={() => openEditModal(member)}
-                  aria-label={`Edit role for ${member.name}`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" />
-                  </svg>
-                  Edit Role
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.cardActionBtn} ${styles.cardActionBtnDanger}`}
-                  onClick={() => openRemoveModal(member)}
-                  aria-label={`Remove ${member.name}`}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                  </svg>
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       <Modal
@@ -241,31 +309,31 @@ export default function TeamPage() {
         }}
       >
         <div className={styles.form}>
-          <Input 
-            label="Full Name" 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
+          <Input
+            label="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Dr. Jane Doe"
           />
-          <Input 
-            label="Email Address" 
+          <Input
+            label="Email Address"
             type="email"
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="jane@lab.com"
           />
-          <Input 
-            label="Temporary Password" 
+          <Input
+            label="Temporary Password"
             type="password"
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            placeholder="Minimum 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Minimum 8 characters"
           />
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Role</label>
-            <select 
-              className={styles.roleSelect} 
-              value={role} 
+            <select
+              className={styles.roleSelect}
+              value={role}
               onChange={(e) => setRole(e.target.value as Role)}
             >
               <option value="ADMIN">Admin (PI / Lead)</option>
@@ -317,9 +385,9 @@ export default function TeamPage() {
           <p style={{ fontSize: '14px', color: 'var(--color-on-surface-variant)', marginBottom: '8px' }}>
             Select a new role for this member. They will be required to log in again if their permissions change significantly.
           </p>
-          <select 
-            className={styles.roleSelect} 
-            value={role} 
+          <select
+            className={styles.roleSelect}
+            value={role}
             onChange={(e) => setRole(e.target.value as Role)}
           >
             <option value="ADMIN">Admin (PI / Lead)</option>

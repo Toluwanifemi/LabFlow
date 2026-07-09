@@ -52,13 +52,36 @@
 }
 
 .trendUp {
-  color: #16a34a;
+  color: var(--color-tertiary);
 }
 
 .trendDown {
-  color: #dc2626;
+  color: var(--color-error);
 }
 
 .trendNeutral {
   color: var(--color-on-surface-variant);
+}
+
+.warning {
+  border-color: var(--color-error);
+  background-color: color-mix(in srgb, var(--color-error) 4%, transparent);
+}
+
+.warning .value {
+  color: var(--color-error);
+}
+
+.link {
+  text-decoration: none;
+  display: block;
+}
+
+.link:hover .card {
+  border-color: var(--color-error);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--color-error) 15%, transparent);
+}
+
+.actionLink:hover {
+  text-decoration: underline;
 }

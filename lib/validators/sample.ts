@@ -10,8 +10,12 @@ export const createSampleSchema = z.object({
   childCount: z.number().int().min(1).max(10).default(1),
 });
 
+export const PREDEFINED_PHASES = ['Collection', 'Experiment', 'Completion'] as const;
+export type PredefinedPhase = (typeof PREDEFINED_PHASES)[number];
+
 export const updatePhaseSchema = z.object({
-  phase: z.string().min(1, 'Phase name is required'),
+  phase: z.enum(PREDEFINED_PHASES),
+  experimentName: z.string().trim().optional(),
 });
 
 export const attachImageSchema = z.object({

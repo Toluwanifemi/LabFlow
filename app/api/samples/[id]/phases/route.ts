@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'Invalid input.', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { phase } = parsed.data;
+    const { phase, experimentName } = parsed.data;
 
     const existing = await getSamplePhase(params.id, session.user.labId);
 
@@ -30,7 +30,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'This sample does not exist.' }, { status: 404 });
     }
 
-    const updated = await addPhaseToSample(params.id, phase, session.user.name || 'Unknown User', session.user.labId, session.user.id);
+    const updated = await addPhaseToSample(params.id, phase, session.user.name || 'Unknown User', session.user.labId, {
+      experimentName,
+      userId: session.user.id,
+    });
+
+    const auditNewValue = experimentName ? `Experiment — ${experimentName}` : phase;
 
     await writeAuditLog({
       userId: session.user.id,
@@ -38,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       sampleId: params.id,
       fieldChanged: 'currentPhase',
       oldValue: existing.currentPhase,
-      newValue: phase,
+      newValue: auditNewValue,
       ipAddress: getIpAddress(req),
     });
 

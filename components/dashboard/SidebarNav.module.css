@@ -42,8 +42,9 @@
 .logoText {
   font-size: var(--typography-title-large-font-size, 22px);
   font-weight: bold;
-  color: var(--color-on-surface);
+  color: var(--color-primary);
   letter-spacing: -0.5px;
+  text-decoration: none;
 }
 
 .navDesktop {

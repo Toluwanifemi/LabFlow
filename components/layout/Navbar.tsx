@@ -1,14 +1,11 @@
 'use client';
 import { useSession, signOut } from 'next-auth/react';
-import { useState, FormEvent, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import styles from './Navbar.module.css';
 
 export function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { data: session } = useSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,14 +27,6 @@ export function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
     setDropdownOpen(!dropdownOpen);
   };
 
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault();
-    const q = searchQuery.trim();
-    if (q) {
-      router.push(`/samples?q=${encodeURIComponent(q)}`);
-    }
-  };
-
   const getInitials = (name?: string | null) => {
     if (!name) return 'U';
     return name
@@ -51,7 +40,7 @@ export function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   return (
     <header className={styles.header}>
       <div className={styles.container}>
-        {/* Left: Lab name + Search */}
+        {/* Left: Lab name */}
         <div className={styles.leftSection}>
           <button className={styles.menuToggle} onClick={onMenuToggle} aria-label="Toggle menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -63,19 +52,6 @@ export function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
           {session?.user?.labName && (
             <span className={styles.labBadge}>{session.user.labName}</span>
           )}
-          <form className={styles.searchBar} onSubmit={handleSearch}>
-            <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by ID, type, researcher, phase..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
-            />
-          </form>
         </div>
 
         {/* Right: User Profile */}

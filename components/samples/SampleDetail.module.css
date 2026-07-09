@@ -103,23 +103,55 @@
 
 .batchActions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--color-outline-variant);
 }
 
+.batchPhaseSelect {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.batchRadio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 6px;
+  font-size: var(--typography-label-medium-font-size, 12px);
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--color-on-surface-variant);
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+.batchRadio input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.batchRadioActive {
+  border-color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-primary);
+}
+
 .batchInput {
-  flex: 1;
-  min-width: 120px;
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: 8px;
+  max-width: 260px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
   border: 1px solid var(--color-outline);
   background-color: var(--color-surface);
   color: var(--color-on-surface);
-  font-size: var(--typography-body-large-font-size, 16px);
+  font-size: var(--typography-body-medium-font-size, 14px);
   font-family: inherit;
   transition: border-color 0.2s ease;
 }
@@ -127,4 +159,10 @@
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.batchActionsRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }

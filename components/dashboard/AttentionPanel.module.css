@@ -8,8 +8,8 @@
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  background-color: #FFF8E1;
-  border: 1px solid #FFE082;
+  background-color: var(--color-warning-container);
+  border: 1px solid var(--color-warning);
   border-radius: 10px;
   padding: 14px 16px;
 }
@@ -18,11 +18,11 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background-color: #FFE082;
+  background-color: var(--color-warning);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #E65100;
+  color: var(--color-on-warning);
   flex-shrink: 0;
 }
 

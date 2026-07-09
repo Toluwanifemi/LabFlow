@@ -91,6 +91,7 @@ export function SidebarNav({ menuOpen, onClose }: { menuOpen?: boolean; onClose?
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname.startsWith(href);
 
+
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'PI';
   const showAdmin = isLoading || isAdmin;
 
@@ -128,7 +129,7 @@ export function SidebarNav({ menuOpen, onClose }: { menuOpen?: boolean; onClose?
       {/* Desktop sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.logoArea}>
-          <span className={styles.logoText}>LabFlow</span>
+          <Link href="/" className={styles.logoText}>LabFlow</Link>
         </div>
         <nav className={styles.navDesktop}>
           {renderLinks()}
@@ -140,7 +141,7 @@ export function SidebarNav({ menuOpen, onClose }: { menuOpen?: boolean; onClose?
         <div className={styles.overlay} onClick={onClose}>
           <aside className={styles.mobileDrawer} onClick={e => e.stopPropagation()}>
             <div className={styles.drawerHeader}>
-              <span className={styles.logoText}>LabFlow</span>
+              <Link href="/" className={styles.logoText}>LabFlow</Link>
               <button className={styles.closeBtn} onClick={onClose} aria-label="Close menu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />

@@ -25,7 +25,8 @@ export async function writeAuditLog(params: WriteAuditLogParams) {
   });
 }
 
-export async function getAuditLogsForLab(labId: string) {
+export async function getAuditLogsForLab(labId: string, page = 1, limit = 25) {
+  const skip = (page - 1) * limit;
   return prisma.auditLog.findMany({
     where: {
       user: { labId }
@@ -34,7 +35,23 @@ export async function getAuditLogsForLab(labId: string) {
       user: { select: { name: true, email: true } },
       sample: { select: { humanId: true } }
     },
-    orderBy: { timestamp: 'desc' }
+    orderBy: { timestamp: 'desc' },
+    skip,
+    take: limit,
+  });
+}
+
+export async function getAuditLogsCountForLab(labId: string): Promise<number> {
+  return prisma.auditLog.count({
+    where: {
+      user: { labId }
+    }
+  });
+}
+
+export async function countAuditLogsForLab(labId: string): Promise<number> {
+  return prisma.auditLog.count({
+    where: { user: { labId } },
   });
 }
 

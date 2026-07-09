@@ -7,6 +7,7 @@ export async function createSample(data: any, userId: string, labId: string, slu
       collectionDate: new Date(data.collectionDate),
       slug,
       humanId,
+      currentPhase: 'Collection',
       createdById: userId,
       labId,
     },
@@ -40,10 +41,19 @@ export async function getSampleByHumanId(humanId: string, labId: string) {
   });
 }
 
-export async function getSamplesForLab(labId: string) {
+export async function getSamplesForLab(labId: string, page = 1, limit = 25) {
+  const skip = (page - 1) * limit;
   return prisma.sample.findMany({
     where: { labId, isDeleted: false },
     orderBy: { createdAt: 'desc' },
+    skip,
+    take: limit,
+  });
+}
+
+export async function getSamplesCountForLab(labId: string): Promise<number> {
+  return prisma.sample.count({
+    where: { labId, isDeleted: false },
   });
 }
 
@@ -120,7 +130,100 @@ const VALID_PHASES = [
   'ARCHIVED'
 ];
 
-export async function searchSamples(labId: string, query: string) {
+export async function querySamples(
+  labId: string,
+  options: {
+    q?: string;
+    sampleType?: string;
+    sort?: string;
+    archived?: boolean;
+    page?: number;
+    limit?: number;
+    attention?: string;
+  } = {}
+) {
+  const { q, sampleType, sort = 'newest', archived = false, page = 1, limit = 25, attention } = options;
+  const skip = (page - 1) * limit;
+
+  const where: any = { labId };
+
+  where.isDeleted = archived;
+
+  if (q) {
+    const phaseTypeEnumMatches = VALID_PHASES.filter((val) =>
+      val.toLowerCase().includes(q.toLowerCase())
+    );
+    const orConditions: any[] = [
+      { humanId: { contains: q, mode: 'insensitive' } },
+      { sampleType: { contains: q, mode: 'insensitive' } },
+      { source: { contains: q, mode: 'insensitive' } },
+      { experimentType: { contains: q, mode: 'insensitive' } },
+      { createdBy: { name: { contains: q, mode: 'insensitive' } } },
+    ];
+    if (phaseTypeEnumMatches.length > 0) {
+      orConditions.push({ currentPhase: { in: phaseTypeEnumMatches } });
+    }
+    where.OR = orConditions;
+  }
+
+  if (sampleType) {
+    where.sampleType = { equals: sampleType, mode: 'insensitive' };
+  }
+
+  if (attention) {
+    const staleThreshold = new Date();
+    staleThreshold.setDate(staleThreshold.getDate() - 14);
+
+    const attentionConditions: any[] = [];
+    if (attention === 'missing_images' || attention === 'all') {
+      attentionConditions.push({ images: { equals: [] } });
+    }
+    if (attention === 'stale' || attention === 'all') {
+      attentionConditions.push({ updatedAt: { lt: staleThreshold } });
+    }
+
+    if (attentionConditions.length > 0) {
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: attentionConditions }];
+        delete where.OR;
+      } else {
+        where.OR = attentionConditions;
+      }
+    }
+  }
+
+  let orderBy: any;
+  switch (sort) {
+    case 'oldest': orderBy = { createdAt: 'asc' }; break;
+    case 'type_asc': orderBy = { sampleType: 'asc' }; break;
+    case 'type_desc': orderBy = { sampleType: 'desc' }; break;
+    case 'id_asc': orderBy = { humanId: 'asc' }; break;
+    case 'id_desc': orderBy = { humanId: 'desc' }; break;
+    case 'source_asc': orderBy = { source: 'asc' }; break;
+    case 'source_desc': orderBy = { source: 'desc' }; break;
+    case 'date_asc': orderBy = { collectionDate: 'asc' }; break;
+    case 'date_desc': orderBy = { collectionDate: 'desc' }; break;
+    case 'phase_asc': orderBy = { currentPhase: 'asc' }; break;
+    case 'phase_desc': orderBy = { currentPhase: 'desc' }; break;
+    default: orderBy = { createdAt: 'desc' };
+  }
+
+  const [samples, total] = await Promise.all([
+    prisma.sample.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: { createdBy: { select: { name: true } } },
+    }),
+    prisma.sample.count({ where }),
+  ]);
+
+  return { samples, total };
+}
+
+export async function searchSamples(labId: string, query: string, page = 1, limit = 25) {
+  const skip = (page - 1) * limit;
   const phaseTypeEnumMatches = VALID_PHASES.filter((val) =>
     val.toLowerCase().includes(query.toLowerCase())
   );
@@ -145,6 +248,34 @@ export async function searchSamples(labId: string, query: string) {
     },
     include: { createdBy: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
+    skip,
+    take: limit,
+  });
+}
+
+export async function searchSamplesCount(labId: string, query: string): Promise<number> {
+  const phaseTypeEnumMatches = VALID_PHASES.filter((val) =>
+    val.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const orConditions: any[] = [
+    { humanId: { contains: query, mode: 'insensitive' } },
+    { sampleType: { contains: query, mode: 'insensitive' } },
+    { source: { contains: query, mode: 'insensitive' } },
+    { experimentType: { contains: query, mode: 'insensitive' } },
+    { createdBy: { name: { contains: query, mode: 'insensitive' } } },
+  ];
+
+  if (phaseTypeEnumMatches.length > 0) {
+    orConditions.push({ currentPhase: { in: phaseTypeEnumMatches } });
+  }
+
+  return prisma.sample.count({
+    where: {
+      labId,
+      isDeleted: false,
+      OR: orConditions,
+    },
   });
 }
 

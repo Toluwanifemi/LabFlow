@@ -32,6 +32,7 @@ export interface PhaseEntry {
   phase: string;
   updatedBy: string;
   timestamp: string;
+  experimentName?: string;
 }
 
 export interface ImageEntry {

@@ -16,21 +16,18 @@ export async function POST(req: NextRequest) {
     let failed = 0;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    for (const sample of samples) {
-      try {
-        const qrCodeUrl = await Promise.race([
-          generateQRCodeUrl(`${appUrl}/samples/${sample.id}`),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('QR Timeout')), 1500)
-          ),
-        ]);
-        await updateSampleQR(sample.id, qrCodeUrl, session.user.labId);
-        retried++;
-      } catch (err) {
-        console.error(`[POST /api/qr/retry] QR generation failed for sample ${sample.id}:`, err);
-        failed++;
-      }
-    }
+    await Promise.all(
+      samples.map(async (sample) => {
+        try {
+          const qrCodeUrl = await generateQRCodeUrl(`${appUrl}/samples/${sample.id}`);
+          await updateSampleQR(sample.id, qrCodeUrl, session.user.labId);
+          retried++;
+        } catch (err) {
+          console.error(`[POST /api/qr/retry] QR generation failed for sample ${sample.id}:`, err);
+          failed++;
+        }
+      })
+    );
 
     return NextResponse.json({ retried, failed, total: samples.length }, { status: 200 });
   } catch (error) {

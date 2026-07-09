@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { createSample, getNextSampleSequence, updateSampleQR, getSamplesForLab, getSampleByHumanId, getSampleBySlug } from '@/lib/db/samples';
+import { createSample, getNextSampleSequence, updateSampleQR, getSamplesForLab, getSamplesCountForLab, getSampleByHumanId, getSampleBySlug, querySamples } from '@/lib/db/samples';
 import { createReplicates } from '@/lib/db/replicates';
 import { writeAuditLog } from '@/lib/db/audit';
 import { getUserByEmailWithLab } from '@/lib/db/users';
@@ -188,9 +188,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(sample, { status: 200 });
     }
 
-    const samples = await getSamplesForLab(dbUser.labId);
+    const q = searchParams.get('q')?.trim() || undefined;
+    const sampleType = searchParams.get('sampleType')?.trim() || undefined;
+    const sort = (searchParams.get('sort') as any) || 'newest';
+    const archived = searchParams.get('archived') === 'true';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
+    const attention = searchParams.get('attention') || undefined;
+
+    const { samples, total } = await querySamples(dbUser.labId, {
+      q,
+      sampleType,
+      sort,
+      archived,
+      page,
+      limit,
+      attention,
+    });
     
-    return NextResponse.json(samples, { status: 200 });
+    return NextResponse.json({ data: samples, total, page, limit }, { status: 200 });
 
   } catch (error) {
     console.error('[GET /api/samples]', error);

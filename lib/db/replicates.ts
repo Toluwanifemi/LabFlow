@@ -1,11 +1,13 @@
 import { prisma } from './client';
 import { generateChildHumanId, generateChildSlug } from '@/lib/id/generateId';
 
-export async function getChildSamples(sampleId: string, labId: string) {
+export async function getChildSamples(sampleId: string, labId: string, take?: number, skip?: number) {
   return prisma.sample.findMany({
     where: { parentSampleId: sampleId, labId, isDeleted: false },
     orderBy: { humanId: 'asc' },
     include: { createdBy: { select: { name: true } } },
+    take,
+    skip,
   });
 }
 

@@ -2,7 +2,7 @@ import React, { useId } from 'react';
 import styles from './Input.module.css';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   labelAction?: React.ReactNode;
   error?: string;
   helperText?: string;
@@ -17,12 +17,14 @@ export function Input({ label, labelAction, error, helperText, suffix, className
 
   return (
     <div className={`${styles.container} ${className || ''}`}>
-      <div className={styles.labelRow}>
-        <label htmlFor={inputId} className={styles.label}>
-          {label}
-        </label>
-        {labelAction && <span className={styles.labelAction}>{labelAction}</span>}
-      </div>
+      {label && (
+        <div className={styles.labelRow}>
+          <label htmlFor={inputId} className={styles.label}>
+            {label}
+          </label>
+          {labelAction && <span className={styles.labelAction}>{labelAction}</span>}
+        </div>
+      )}
       <div className={styles.inputWrapper}>
         <input
           id={inputId}

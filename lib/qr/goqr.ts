@@ -43,11 +43,5 @@ export async function generateQRCodeUrl(sampleUrl: string): Promise<string> {
   });
 
   const qrUrl = `${GOQR_BASE_URL}?${params.toString()}`;
-
-  const response = await fetch(qrUrl, { method: 'HEAD' });
-  if (!response.ok) {
-    throw new Error(`goQR API returned ${response.status}`);
-  }
-
   return qrUrl;
 }
