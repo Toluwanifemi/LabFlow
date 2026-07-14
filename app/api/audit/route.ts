@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
 import { getAuditLogsForLab, getAuditLogsCountForLab } from '@/lib/db/audit';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();

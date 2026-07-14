@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db/client';
 import { getSamplesForLab } from '@/lib/db/samples';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const AI_TIMEOUT = 8000;
 
 const messageSchema = z.object({
