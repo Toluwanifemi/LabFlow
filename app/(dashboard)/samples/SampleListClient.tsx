@@ -133,6 +133,7 @@ export function SampleListClient({
         ...(initialPage > 1 ? { page: String(initialPage) } : {}),
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
