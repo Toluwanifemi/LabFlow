@@ -121,6 +121,30 @@ async function callOpenAI(messages: { role: string; content: string }[], systemP
   }
 }
 
+async function raceSuccessful(promises: Promise<string | null>[]): Promise<string | null> {
+  return new Promise((resolve) => {
+    let resolved = false;
+    let pendingCount = promises.length;
+
+    promises.forEach(async (p) => {
+      try {
+        const res = await p;
+        if (res !== null && !resolved) {
+          resolved = true;
+          resolve(res);
+        }
+      } catch (err) {
+        // ignore errors
+      } finally {
+        pendingCount--;
+        if (pendingCount === 0 && !resolved) {
+          resolve(null);
+        }
+      }
+    });
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -176,7 +200,7 @@ Do not give medical advice or make up samples. Only refer to samples in the prov
     let aiText: string | null = null;
 
     if (hasGemini && hasOpenAI) {
-      aiText = await Promise.race([
+      aiText = await raceSuccessful([
         callGemini(messages, systemPrompt),
         callOpenAI(messages, systemPrompt),
       ]);
