@@ -18,6 +18,7 @@ export async function readQRCode(file: File): Promise<GoQRReadResponse> {
   const res = await fetch('https://api.qrserver.com/v1/read-qr-code/', {
     method: 'POST',
     body: formData,
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!res.ok) {
@@ -28,7 +29,7 @@ export async function readQRCode(file: File): Promise<GoQRReadResponse> {
   return data[0];
 }
 
-export async function generateQRCodeUrl(sampleUrl: string): Promise<string> {
+export function generateQRCodeUrl(sampleUrl: string): string {
   const params = new URLSearchParams({
     data:             sampleUrl,
     size:             '300x300',
@@ -42,6 +43,5 @@ export async function generateQRCodeUrl(sampleUrl: string): Promise<string> {
     'charset-target': 'UTF-8',
   });
 
-  const qrUrl = `${GOQR_BASE_URL}?${params.toString()}`;
-  return qrUrl;
+  return `${GOQR_BASE_URL}?${params.toString()}`;
 }

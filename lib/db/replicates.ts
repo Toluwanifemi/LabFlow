@@ -20,38 +20,43 @@ export async function createReplicates(
   labId: string,
 ) {
   const suffixes = 'ABCDEFGHIJ'.split('').slice(0, replicateCount);
+  
+  const generateCuid = () => 'c' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 14);
+  const parentId = generateCuid();
+  const childIds = suffixes.slice(1).map(() => generateCuid());
 
-  return prisma.$transaction(async (tx) => {
-    const created: any[] = [];
-    let parentId: string | null = null;
-
-    for (const suffix of suffixes) {
-      const humanId = generateChildHumanId(baseHumanId, suffix);
-      let slug = generateChildSlug(baseSlug, suffix);
-      const existingSlug = await tx.sample.findUnique({ where: { slug } });
-      if (existingSlug) {
-        slug = `${slug}-${Math.random().toString(36).slice(2, 5)}`;
-      }
-
-      const sample: any = await tx.sample.create({
-        data: {
-          sampleType: data.sampleType,
-          source: data.source,
-          collectionDate: new Date(data.collectionDate),
-          description: data.description,
-          experimentType: data.experimentType,
-          slug,
-          humanId,
-          parentSampleId: parentId,
-          createdById: userId,
-          labId,
-        },
-      });
-
-      if (!parentId) parentId = sample.id;
-      created.push(sample);
-    }
-
-    return created;
+  const baseChildSlugs = suffixes.map(suffix => generateChildSlug(baseSlug, suffix));
+  // Query all existing slugs in bulk globally
+  const existingSamples = await prisma.sample.findMany({
+    where: { slug: { in: baseChildSlugs } },
+    select: { slug: true },
   });
+  const existingSlugsSet = new Set(existingSamples.map(s => s.slug));
+
+  const sampleDataList = suffixes.map((suffix, index) => {
+    const humanId = generateChildHumanId(baseHumanId, suffix);
+    let slug = baseChildSlugs[index];
+    if (existingSlugsSet.has(slug)) {
+      slug = `${slug}-${Math.random().toString(36).slice(2, 5)}`;
+    }
+    const id = index === 0 ? parentId : childIds[index - 1];
+    
+    return {
+      id,
+      sampleType: data.sampleType,
+      source: data.source,
+      collectionDate: new Date(data.collectionDate),
+      description: data.description,
+      experimentType: data.experimentType,
+      slug,
+      humanId,
+      parentSampleId: index === 0 ? null : parentId,
+      createdById: userId,
+      labId,
+    };
+  });
+
+  return prisma.$transaction(
+    sampleDataList.map(item => prisma.sample.create({ data: item }))
+  );
 }

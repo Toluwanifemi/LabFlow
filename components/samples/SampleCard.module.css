@@ -114,3 +114,23 @@
   padding: 0 2px;
   border-radius: 2px;
 }
+
+.archiveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  color: var(--color-error);
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: var(--typography-label-small-font-size, 12px);
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+.archiveBtn:hover {
+  background-color: var(--color-error-container);
+}

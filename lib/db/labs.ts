@@ -1,9 +1,6 @@
 import { prisma } from './client';
-import { Lab } from '@/types';
-
-export async function getLabById(labId: string): Promise<Lab | null> {
-  return prisma.lab.findUnique({ where: { id: labId } }) as unknown as Promise<Lab | null>;
-}
+import type { Lab } from '@/types';
+import { toLab } from './mappers';
 
 export async function createLab(name: string, institution?: string) {
   return prisma.lab.create({
@@ -12,8 +9,9 @@ export async function createLab(name: string, institution?: string) {
 }
 
 export async function updateLabSettings(labId: string, data: { name?: string; institution?: string; researchFields?: string[] }): Promise<Lab> {
-  return prisma.lab.update({
+  const lab = await prisma.lab.update({
     where: { id: labId },
     data,
-  }) as unknown as Promise<Lab>;
+  });
+  return toLab(lab);
 }

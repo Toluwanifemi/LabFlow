@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { getAuditLogsForLab, countAuditLogsForLab } from '@/lib/db/audit';
+import { getAuditLogsForLab, getAuditLogsCountForLab } from '@/lib/db/audit';
 
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user?.id || !session?.user?.labId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     if (!canPerformAction(session.user.role, 'view_audit_log')) {
       return NextResponse.json({ error: 'You do not have permission to perform this action.' }, { status: 403 });
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const [logs, total] = await Promise.all([
       getAuditLogsForLab(session.user.labId, page, limit),
-      countAuditLogsForLab(session.user.labId),
+      getAuditLogsCountForLab(session.user.labId),
     ]);
     return NextResponse.json({ data: logs, total, page, limit }, { status: 200 });
   } catch (error) {

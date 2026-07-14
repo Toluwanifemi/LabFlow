@@ -15,6 +15,7 @@ model Lab {
   createdAt      DateTime  @default(now()) @map("created_at")
   users          User[]
   samples        Sample[]
+  auditLogs      AuditLog[]
 
   @@map("labs")
 }
@@ -104,6 +105,7 @@ model Sample {
   @@index([labId, isDeleted])
   @@index([createdById])
   @@index([parentSampleId])
+  @@index([updatedAt])
   @@map("samples")
 }
 
@@ -121,9 +123,13 @@ model AuditLog {
   userId       String      @map("user_id")
   sample       Sample?     @relation(fields: [sampleId], references: [id])
   sampleId     String?     @map("sample_id")
+  lab          Lab?        @relation(fields: [labId], references: [id])
+  labId        String?     @map("lab_id")
 
   @@index([userId])
   @@index([sampleId])
+  @@index([timestamp])
+  @@index([labId, timestamp])
   @@map("audit_logs")
 }
 

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { HeroSection } from './components/HeroSection';
 import { HowItWorks } from './components/HowItWorks';
-import { TrustedBy } from './components/TrustedBy';
 import { FeatureCardLogger } from './components/FeatureCardLogger';
 import { FeatureCardSync } from './components/FeatureCardSync';
 import { FeatureCardAudit } from './components/FeatureCardAudit';

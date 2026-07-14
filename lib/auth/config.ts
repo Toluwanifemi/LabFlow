@@ -1,6 +1,17 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
+import type { PrismaClient } from '@prisma/client';
+
+let _prisma: PrismaClient | undefined;
+
+async function getPrisma(): Promise<PrismaClient> {
+  if (!_prisma) {
+    const mod = await import('@/lib/db/client');
+    _prisma = mod.prisma;
+  }
+  return _prisma;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -12,8 +23,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-
-        const { prisma } = await import('@/lib/db/client');
+        const prisma = await getPrisma();
 
         const user = await prisma.user.findFirst({
           where: { 

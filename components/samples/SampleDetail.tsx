@@ -6,7 +6,6 @@ import { QRDisplay } from '@/components/qr/QRDisplay';
 import { PhaseTracker } from '@/components/samples/PhaseTracker';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
 import { useToast } from '@/hooks/useToast';
 import { usePermissions } from '@/hooks/usePermissions';
 import styles from './SampleDetail.module.css';
@@ -47,6 +46,7 @@ export function SampleDetail({ sample, childSamples }: SampleDetailProps) {
   const [batchExperimentName, setBatchExperimentName] = useState('');
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
+
 
   const toggleChild = (id: string) => {
     setSelectedChildren((prev) => {

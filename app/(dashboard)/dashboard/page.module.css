@@ -292,3 +292,128 @@
 .card :global(.chart) {
   margin: 0;
 }
+
+/* Attention Items */
+.attentionRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .attentionRow {
+    flex-direction: row;
+    gap: 12px;
+  }
+}
+
+.attentionCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface);
+  text-decoration: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.attentionCard:hover {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+.attentionCardMissing {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  background-color: color-mix(in srgb, var(--color-primary) 4%, transparent);
+}
+
+.attentionCardMissing:hover {
+  border-color: var(--color-primary);
+}
+
+.attentionCardStale {
+  border-color: color-mix(in srgb, #d97706 30%, transparent);
+  background-color: color-mix(in srgb, #d97706 4%, transparent);
+}
+
+.attentionCardStale:hover {
+  border-color: #d97706;
+}
+
+.attentionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.attentionIconMissing {
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+.attentionIconStale {
+  background-color: color-mix(in srgb, #d97706 10%, transparent);
+  color: #d97706;
+}
+
+.attentionBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.attentionMessage {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attentionActionLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+}
+
+.attentionCount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.attentionCountMissing {
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.attentionCountStale {
+  background-color: color-mix(in srgb, #d97706 12%, transparent);
+  color: #d97706;
+}
+
+.attentionChevron {
+  color: var(--color-on-surface-variant);
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.attentionCard:hover .attentionChevron {
+  opacity: 1;
+}

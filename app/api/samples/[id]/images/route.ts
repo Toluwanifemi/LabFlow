@@ -13,7 +13,7 @@ const MAX_SIZE = 10 * 1024 * 1024;
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id || !session?.user?.labId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -65,12 +65,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
     const url = blob.url;
 
-    await attachImage(params.id, session.user.labId, {
+    const attached = await attachImage(params.id, session.user.labId, {
       filename: file.name,
       uploaderId: session.user.id,
       uploadTimestamp: new Date().toISOString(),
       url,
     });
+
+    if (!attached) {
+      return NextResponse.json({ error: 'Sample not found' }, { status: 404 });
+    }
 
     await writeAuditLog({
       userId: session.user.id,
@@ -78,6 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       sampleId: params.id,
       fieldChanged: 'images',
       ipAddress: getIpAddress(req),
+      labId: session.user.labId,
     });
 
     return NextResponse.json({ url, filename: file.name }, { status: 201 });

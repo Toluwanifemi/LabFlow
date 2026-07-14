@@ -1,63 +1,25 @@
-import { prisma } from './client';
-import { ACTIVE_PHASES } from '@/lib/constants';
+const { PrismaClient } = require('c:\\Users\\HP ELITEBOOK 840 G6\\Desktop\\LabFlow\\node_modules\\@prisma/client');
+const prisma = new PrismaClient();
 
-export interface DashboardStats {
-  totalSamples: number;
-  totalSamplesTrend: number;
-  samplesAddedToday: number;
-  samplesAddedTodayTrend: number;
-  activeExperiments: number;
-  activeExperimentsTrend: number;
-}
+const ACTIVE_PHASES = [
+  'collection',
+  'induction',
+  'monitoring',
+  'treatment',
+  'sample_collection',
+  'analysis',
+];
 
-export interface PhaseDistributionItem {
-  phase: string;
-  count: number;
-  percentage: number;
-}
-
-export interface RecentActivityItem {
-  id: string;
-  userName: string;
-  actionType: string;
-  sampleHumanId: string | null;
-  timestamp: string;
-}
-
-export interface AttentionItem {
-  type: 'missing_images' | 'stale_samples' | 'sync_issues';
-  count: number;
-  message: string;
-  actionLabel: string;
-  actionHref: string;
-}
-
-export interface RecentSampleItem {
-  id: string;
-  humanId: string;
-  slug: string;
-  sampleType: string;
-  source: string;
-  currentPhase: string | null;
-  updatedAt: string;
-  isDeleted: boolean;
-  createdByName: string | null;
-}
-
-
-
-export async function getDashboardStats(labId: string, userId?: string): Promise<DashboardStats> {
+async function getDashboardStats(labId, userId) {
   const baseWhere = userId
     ? { labId, isDeleted: false, createdById: userId }
     : { labId, isDeleted: false };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  // Batch all 6 counts in a single transaction (1 round-trip instead of 6)
   const [
     totalSamples,
     samplesAddedToday,
@@ -67,9 +29,7 @@ export async function getDashboardStats(labId: string, userId?: string): Promise
     activePrev,
   ] = await prisma.$transaction([
     prisma.sample.count({ where: baseWhere }),
-    prisma.sample.count({
-      where: { ...baseWhere, createdAt: { gte: today } },
-    }),
+    prisma.sample.count({ where: { ...baseWhere, createdAt: { gte: today } } }),
     prisma.sample.count({
       where: {
         ...baseWhere,
@@ -77,15 +37,8 @@ export async function getDashboardStats(labId: string, userId?: string): Promise
         currentPhase: { in: ACTIVE_PHASES },
       },
     }),
-    prisma.sample.count({
-      where: { ...baseWhere, createdAt: { lt: today } },
-    }),
-    prisma.sample.count({
-      where: {
-        ...baseWhere,
-        createdAt: { gte: yesterday, lt: today },
-      },
-    }),
+    prisma.sample.count({ where: { ...baseWhere, createdAt: { lt: today } } }),
+    prisma.sample.count({ where: { ...baseWhere, createdAt: { gte: yesterday, lt: today } } }),
     prisma.sample.count({
       where: {
         ...baseWhere,
@@ -96,7 +49,7 @@ export async function getDashboardStats(labId: string, userId?: string): Promise
     }),
   ]);
 
-  const calcTrend = (current: number, previous: number): number => {
+  const calcTrend = (current, previous) => {
     if (previous === 0) return current > 0 ? 100 : 0;
     return Math.round(((current - previous) / previous) * 100);
   };
@@ -111,7 +64,7 @@ export async function getDashboardStats(labId: string, userId?: string): Promise
   };
 }
 
-export async function getPhaseDistribution(labId: string, userId?: string): Promise<PhaseDistributionItem[]> {
+async function getPhaseDistribution(labId, userId) {
   const where = userId
     ? { labId, isDeleted: false, createdById: userId }
     : { labId, isDeleted: false };
@@ -123,12 +76,12 @@ export async function getPhaseDistribution(labId: string, userId?: string): Prom
   });
 
   const PHASE_ORDER = ['collection', 'experiment', 'completion'];
-  const counts: Record<string, number> = {};
+  const counts = {};
   let total = 0;
 
   for (const g of grouped) {
     const phase = (g.currentPhase || 'Collection').toLowerCase();
-    counts[phase] = g._count;
+    counts[phase] = (counts[phase] || 0) + g._count;
     total += g._count;
   }
 
@@ -139,8 +92,8 @@ export async function getPhaseDistribution(labId: string, userId?: string): Prom
   }));
 }
 
-export async function getRecentActivity(labId: string, limit = 10, userId?: string): Promise<RecentActivityItem[]> {
-  const where: any = { labId };
+async function getRecentActivity(labId, limit = 10, userId) {
+  const where = { labId };
   if (userId) {
     where.userId = userId;
   }
@@ -164,45 +117,7 @@ export async function getRecentActivity(labId: string, limit = 10, userId?: stri
   }));
 }
 
-export async function getAttentionItems(labId: string): Promise<AttentionItem[]> {
-  const staleThreshold = new Date();
-  staleThreshold.setDate(staleThreshold.getDate() - 14);
-
-  const [missingImageCount, staleSampleCount] = await Promise.all([
-    prisma.sample.count({
-      where: { labId, isDeleted: false, images: { equals: [] } },
-    }),
-    prisma.sample.count({
-      where: { labId, isDeleted: false, updatedAt: { lt: staleThreshold } },
-    }),
-  ]);
-
-  const items: AttentionItem[] = [];
-
-  if (missingImageCount > 0) {
-    items.push({
-      type: 'missing_images',
-      count: missingImageCount,
-      message: `${missingImageCount} sample${missingImageCount !== 1 ? 's' : ''} missing image attachments`,
-      actionLabel: 'Review Samples',
-      actionHref: '/samples',
-    });
-  }
-
-  if (staleSampleCount > 0) {
-    items.push({
-      type: 'stale_samples',
-      count: staleSampleCount,
-      message: `${staleSampleCount} sample${staleSampleCount !== 1 ? 's' : ''} not updated in 14 days`,
-      actionLabel: 'Review Samples',
-      actionHref: '/samples',
-    });
-  }
-
-  return items;
-}
-
-export async function getRecentSamples(labId: string, limit = 10, userId?: string): Promise<RecentSampleItem[]> {
+async function getRecentSamples(labId, limit = 10, userId) {
   const where = userId
     ? { labId, isDeleted: false, createdById: userId }
     : { labId, isDeleted: false };
@@ -228,3 +143,73 @@ export async function getRecentSamples(labId: string, limit = 10, userId?: strin
     createdByName: s.createdBy.name,
   }));
 }
+
+async function getAttentionItems(labId) {
+  const staleThreshold = new Date();
+  staleThreshold.setDate(staleThreshold.getDate() - 14);
+
+  const [missingImageCount, staleSampleCount] = await Promise.all([
+    prisma.sample.count({
+      where: { labId, isDeleted: false, images: { equals: [] } },
+    }),
+    prisma.sample.count({
+      where: { labId, isDeleted: false, updatedAt: { lt: staleThreshold } },
+    }),
+  ]);
+
+  const items = [];
+
+  if (missingImageCount > 0) {
+    items.push({
+      type: 'missing_images',
+      count: missingImageCount,
+      message: `${missingImageCount} samples missing image attachments`,
+      actionLabel: 'Review Samples',
+      actionHref: '/samples',
+    });
+  }
+
+  if (staleSampleCount > 0) {
+    items.push({
+      type: 'stale_samples',
+      count: staleSampleCount,
+      message: `${staleSampleCount} samples not updated in 14 days`,
+      actionLabel: 'Review Samples',
+      actionHref: '/samples',
+    });
+  }
+
+  return items;
+}
+
+async function main() {
+  // Let's get the first lab in the database to test with
+  const firstLab = await prisma.lab.findFirst({ select: { id: true } });
+  if (!firstLab) {
+    console.log('No labs in the database.');
+    process.exit(0);
+  }
+  const labId = firstLab.id;
+  console.log('Testing with labId:', labId);
+
+  const [stats, recentActivity, attentionItems, recentSamples, phaseDistribution] = await Promise.all([
+    getDashboardStats(labId),
+    getRecentActivity(labId, 10),
+    getAttentionItems(labId),
+    getRecentSamples(labId, 10),
+    getPhaseDistribution(labId),
+  ]);
+
+  console.log('All dashboard queries succeeded!');
+  console.log('Stats:', stats);
+  console.log('Phase Distribution:', phaseDistribution);
+  console.log('Recent Activity count:', recentActivity.length);
+  console.log('Attention items:', attentionItems);
+  console.log('Recent Samples count:', recentSamples.length);
+  process.exit(0);
+}
+
+main().catch(err => {
+  console.error('CRASH DETECTED:', err);
+  process.exit(1);
+});

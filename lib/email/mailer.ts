@@ -75,7 +75,7 @@ async function sendViaResend({ to, subject, text, html }: SendEmailParams): Prom
   }
 }
 
-export async function sendEmail({ to, subject, text, html }: SendEmailParams): Promise<boolean> {
+async function sendEmail({ to, subject, text, html }: SendEmailParams): Promise<boolean> {
   if (process.env.SMTP_HOST) {
     const sent = await sendViaSmtp({ to, subject, text, html });
     if (sent) return true;

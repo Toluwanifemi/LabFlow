@@ -80,9 +80,14 @@ export function DashboardClient({
   const [isLiveUpdating, setIsLiveUpdating] = useState(false);
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
   const mountedRef = useRef(true);
+  const lastFetchRef = useRef(0);
 
   const fetchLiveData = useCallback(async () => {
     if (!mountedRef.current) return;
+
+    const now = Date.now();
+    if (now - lastFetchRef.current < 30_000) return;
+    lastFetchRef.current = now;
     try {
       const res = await fetch('/api/dashboard');
       if (!res.ok || !mountedRef.current) {
@@ -128,7 +133,24 @@ export function DashboardClient({
   }, [fetchLiveData]);
 
   const isStudent = role === 'STUDENT';
-  const totalAttention = attentionItems.reduce((sum, item) => sum + item.count, 0);
+
+  const attentionIcon = (type: string) => {
+    if (type === 'missing_images') {
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="18" height="18">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="M21 15l-5-5L5 21" />
+        </svg>
+      );
+    }
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="18" height="18">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    );
+  };
 
   return (
     <>
@@ -165,15 +187,30 @@ export function DashboardClient({
           value={stats.samplesAddedToday}
           trend={stats.samplesAddedTodayTrend}
         />
-        {!isStudent && totalAttention > 0 && (
-          <StatCard
-            title="Needs Attention"
-            value={totalAttention}
-            variant="warning"
-            href="/samples?attention=all"
-          />
-        )}
       </section>
+
+      {!isStudent && attentionItems.length > 0 && (
+        <section className={styles.attentionRow}>
+          {attentionItems.map((item) => {
+            const typeClass = item.type === 'missing_images' ? styles.attentionCardMissing : styles.attentionCardStale;
+            const iconClass = item.type === 'missing_images' ? styles.attentionIconMissing : styles.attentionIconStale;
+            return (
+              <Link key={item.type} href={item.actionHref} className={`${styles.attentionCard} ${typeClass}`}>
+                <span className={`${styles.attentionIcon} ${iconClass}`}>
+                  {attentionIcon(item.type)}
+                </span>
+                <div className={styles.attentionBody}>
+                  <span className={styles.attentionMessage}>{item.message}</span>
+                  <span className={styles.attentionActionLabel}>{item.actionLabel}</span>
+                </div>
+                <svg className={styles.attentionChevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="16" height="16">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
+            );
+          })}
+        </section>
+      )}
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Phase Distribution</h2>

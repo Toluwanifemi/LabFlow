@@ -9,9 +9,19 @@ interface WriteAuditLogParams {
   oldValue?: string | null;
   newValue?: string | null;
   ipAddress: string;
+  labId?: string;
 }
 
 export async function writeAuditLog(params: WriteAuditLogParams) {
+  let labId = params.labId;
+  if (!labId) {
+    const user = await prisma.user.findUnique({
+      where: { id: params.userId },
+      select: { labId: true },
+    });
+    labId = user?.labId;
+  }
+
   return prisma.auditLog.create({
     data: {
       userId: params.userId,
@@ -21,6 +31,7 @@ export async function writeAuditLog(params: WriteAuditLogParams) {
       oldValue: params.oldValue ?? undefined,
       newValue: params.newValue ?? undefined,
       ipAddress: params.ipAddress,
+      labId: labId ?? undefined,
     },
   });
 }
@@ -29,11 +40,11 @@ export async function getAuditLogsForLab(labId: string, page = 1, limit = 25) {
   const skip = (page - 1) * limit;
   return prisma.auditLog.findMany({
     where: {
-      user: { labId }
+      labId,
     },
     include: {
       user: { select: { name: true, email: true } },
-      sample: { select: { humanId: true } }
+      sample: { select: { humanId: true } },
     },
     orderBy: { timestamp: 'desc' },
     skip,
@@ -44,25 +55,8 @@ export async function getAuditLogsForLab(labId: string, page = 1, limit = 25) {
 export async function getAuditLogsCountForLab(labId: string): Promise<number> {
   return prisma.auditLog.count({
     where: {
-      user: { labId }
-    }
+      labId,
+    },
   });
 }
 
-export async function countAuditLogsForLab(labId: string): Promise<number> {
-  return prisma.auditLog.count({
-    where: { user: { labId } },
-  });
-}
-
-export async function getRecentActivitiesCount(labId: string): Promise<number> {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  
-  return prisma.auditLog.count({
-    where: {
-      user: { labId },
-      timestamp: { gte: sevenDaysAgo }
-    }
-  });
-}

@@ -17,7 +17,7 @@ const signupSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-    const limit = rateLimit(`signup:${ip}`, 5, 60 * 1000);
+    const limit = await rateLimit(`signup:${ip}`, 5, 60 * 1000);
     if (!limit.ok) return limit.response;
 
     const body = await req.json();

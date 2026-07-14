@@ -4,8 +4,12 @@ import { useRouter } from 'next/navigation';
 import { SampleCard } from '@/components/samples/SampleCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/hooks/useToast';
 import Link from 'next/link';
 import styles from './sampleList.module.css';
+
+const PAGE_SIZE = 10;
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
@@ -14,26 +18,15 @@ const SORT_OPTIONS = [
   { value: 'type_desc', label: 'Type Z–A' },
 ] as const;
 
-interface Sample {
-  id: string;
-  humanId: string;
-  sampleType: string;
-  source: string;
-  currentPhase: string | null;
-  collectionDate: string;
-  createdAt: string;
-  images: any[];
-  description: string | null;
-}
+import type { SampleSummary } from '@/types';
 
 interface SampleListClientProps {
-  initialSamples: Sample[];
+  initialSamples: SampleSummary[];
   initialTotal: number;
   initialPage: number;
   initialQ: string;
   initialSort: string;
   initialArchived: boolean;
-  initialAttention?: string;
   role: string;
 }
 
@@ -74,23 +67,22 @@ export function SampleListClient({
   initialQ,
   initialSort,
   initialArchived,
-  initialAttention,
   role,
 }: SampleListClientProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const isAdmin = role === 'ADMIN' || role === 'PI';
 
-  const [samples, setSamples] = useState<Sample[]>(initialSamples);
+  const [samples, setSamples] = useState<SampleSummary[]>(initialSamples);
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(initialPage);
   const [q, setQ] = useState(initialQ);
   const [sort, setSort] = useState(initialSort);
   const [archived, setArchived] = useState(initialArchived);
-  const [attention, setAttention] = useState(initialAttention);
   const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const [hasMore, setHasMore] = useState(initialSamples.length < initialTotal);
+  const [archiveTarget, setArchiveTarget] = useState<SampleSummary | null>(null);
+  const [isArchiveSubmitting, setIsArchiveSubmitting] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout>>();
   const sortRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
@@ -110,7 +102,6 @@ export function SampleListClient({
     sort?: string;
     archived?: boolean;
     page?: number;
-    append?: boolean;
   }) => {
     const sp = new URLSearchParams();
     if (opts.q) sp.set('q', opts.q);
@@ -118,27 +109,16 @@ export function SampleListClient({
     if (opts.archived) sp.set('archived', 'true');
     sp.set('page', String(opts.page || 1));
 
-    const append = opts.append || false;
-    if (append) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
+    setLoading(true);
 
     try {
       const res = await fetch(`/api/samples?${sp.toString()}`);
       if (!res.ok) return;
       const data = await res.json();
-      if (append) {
-        setSamples(prev => [...prev, ...data.data]);
-      } else {
-        setSamples(data.data);
-      }
+      setSamples(data.data);
       setTotal(data.total);
-      setHasMore(data.page * data.limit < data.total);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   }, []);
 
@@ -223,10 +203,36 @@ export function SampleListClient({
     });
   };
 
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchSamples({ q, sort, archived, page: nextPage, append: true });
+  const goToPage = (pageNum: number) => {
+    setPage(pageNum);
+    fetchSamples({ q, sort, archived, page: pageNum });
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (!archiveTarget) return;
+    setIsArchiveSubmitting(true);
+    try {
+      const res = await fetch(`/api/samples/${archiveTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDeleted: true }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to archive sample.');
+      }
+
+      showToast({ message: `Sample ${archiveTarget.humanId} archived.`, type: 'success' });
+      setArchiveTarget(null);
+      setSamples((prev) => prev.filter((s) => s.id !== archiveTarget.id));
+      setTotal((prev) => prev - 1);
+    } catch (err) {
+      showToast({ message: err instanceof Error ? err.message : 'Failed to archive sample.', type: 'error' });
+      setArchiveTarget(null);
+    } finally {
+      setIsArchiveSubmitting(false);
+    }
   };
 
   const handleRowClick = (sampleId: string) => {
@@ -234,6 +240,10 @@ export function SampleListClient({
   };
 
   const hasActiveFilters = !!(q || sort !== 'newest' || archived);
+
+  const startRange = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const endRange = Math.min(page * PAGE_SIZE, total);
+  const showPagination = total > PAGE_SIZE;
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -293,7 +303,7 @@ export function SampleListClient({
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search by ID, type, source\u2026"
+            placeholder="Search by ID, type, source"
             value={q}
             onChange={e => handleSearch(e.target.value)}
           />
@@ -393,7 +403,12 @@ export function SampleListClient({
           {/* Mobile: cards */}
           <div className={styles.grid}>
             {samples.map(sample => (
-              <SampleCard key={sample.id} sample={sample as any} searchQuery={q || undefined} />
+              <SampleCard
+                key={sample.id}
+                sample={sample}
+                searchQuery={q || undefined}
+                onArchive={isAdmin ? () => setArchiveTarget(sample) : undefined}
+              />
             ))}
           </div>
 
@@ -466,6 +481,20 @@ export function SampleListClient({
                               </svg>
                             </span>
                           )}
+                          {isAdmin && (
+                            <button
+                              className={styles.archiveBtn}
+                              onClick={(e) => { e.stopPropagation(); setArchiveTarget(sample); }}
+                              aria-label={`Archive ${sample.humanId}`}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                                <path d="M21 8v13H3V8" />
+                                <path d="M1 3h22v5H1z" />
+                                <path d="M10 12h4" />
+                              </svg>
+                              Archive
+                            </button>
+                          )}
                         </span>
                       </td>
                     </tr>
@@ -475,26 +504,55 @@ export function SampleListClient({
             </table>
           </div>
 
-          {hasMore && (
-            <div className={styles.loadMoreWrapper}>
-              <Button
-                variant="outline"
-                size="large"
-                isLoading={loadingMore}
-                onClick={handleLoadMore}
-              >
-                Load more
-              </Button>
+          {showPagination && (
+            <div className={styles.pagination}>
+              <span className={styles.paginationInfo}>
+                {startRange} &mdash; {endRange} of {total}
+              </span>
+              <div className={styles.paginationButtons}>
+                <button
+                  className={styles.paginationBtn}
+                  disabled={page <= 1 || loading}
+                  onClick={() => goToPage(page - 1)}
+                  aria-label="Previous page"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button
+                  className={styles.paginationBtn}
+                  disabled={endRange >= total || loading}
+                  onClick={() => goToPage(page + 1)}
+                  aria-label="Next page"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          )}
-
-          {!hasMore && samples.length > 0 && (
-            <p className={styles.endMessage}>
-              Showing all {total} sample{total !== 1 ? 's' : ''}
-            </p>
           )}
         </>
       )}
+
+      <Modal
+        isOpen={!!archiveTarget}
+        onClose={() => !isArchiveSubmitting && setArchiveTarget(null)}
+        title="Archive Sample"
+        primaryAction={{
+          label: 'Archive',
+          onClick: handleArchiveConfirm,
+          isLoading: isArchiveSubmitting,
+          danger: true,
+        }}
+        secondaryAction={{
+          label: 'Cancel',
+          onClick: () => setArchiveTarget(null),
+        }}
+      >
+        <p>Archive this sample? It can be restored later.</p>
+      </Modal>
     </div>
   );
 }

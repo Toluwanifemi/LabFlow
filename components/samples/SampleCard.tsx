@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { Sample } from '@/types';
+import type { SampleSummary as Sample } from '@/types';
 import styles from './SampleCard.module.css';
 
 interface SampleCardProps {
   sample: Sample;
   searchQuery?: string;
+  onArchive?: () => void;
 }
 
 const PHASE_COLORS: Record<string, string> = {
@@ -37,7 +38,7 @@ function highlightText(text: string, query: string | undefined) {
   );
 }
 
-export function SampleCard({ sample, searchQuery }: SampleCardProps) {
+export function SampleCard({ sample, searchQuery, onArchive }: SampleCardProps) {
   const phaseColor = getPhaseColor(sample.currentPhase);
   const imageCount = Array.isArray(sample.images) ? sample.images.length : 0;
 
@@ -86,6 +87,20 @@ export function SampleCard({ sample, searchQuery }: SampleCardProps) {
                 <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
             </span>
+          )}
+          {onArchive && (
+            <button
+              className={styles.archiveBtn}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArchive(); }}
+              aria-label={`Archive ${sample.humanId}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                <path d="M21 8v13H3V8" />
+                <path d="M1 3h22v5H1z" />
+                <path d="M10 12h4" />
+              </svg>
+              Archive
+            </button>
           )}
         </div>
       </div>

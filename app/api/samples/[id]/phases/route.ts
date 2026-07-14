@@ -45,6 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       oldValue: existing.currentPhase,
       newValue: auditNewValue,
       ipAddress: getIpAddress(req),
+      labId: session.user.labId,
     });
 
     return NextResponse.json(updated, { status: 200 });

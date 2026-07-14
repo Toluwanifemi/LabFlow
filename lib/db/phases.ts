@@ -1,6 +1,7 @@
 import { prisma } from './client';
-import { PhaseEntry } from '@/types';
-
+import { parsePhaseHistory } from '@/types';
+import type { PhaseEntry } from '@/types';
+import { Prisma } from '@prisma/client';
 
 export async function getSamplePhase(sampleId: string, labId: string) {
   return prisma.sample.findUnique({
@@ -19,7 +20,7 @@ export async function addPhaseToSample(
   const sample = await prisma.sample.findUnique({ where: { id: sampleId, labId } });
   if (!sample) throw new Error('Sample not found');
 
-  const history = (sample.phaseHistory as any) || [];
+  const history = parsePhaseHistory(sample.phaseHistory);
   const newPhase: PhaseEntry = {
     phase: phaseName,
     updatedBy: userName,
@@ -28,9 +29,9 @@ export async function addPhaseToSample(
   };
   history.push(newPhase);
 
-  const updateData: Record<string, unknown> = {
+  const updateData: Prisma.SampleUpdateInput = {
     currentPhase: phaseName,
-    phaseHistory: history,
+    phaseHistory: history as unknown as Prisma.InputJsonValue,
   };
 
   if (phaseName === 'Experiment' && options?.experimentName) {
@@ -48,43 +49,43 @@ export async function addPhaseToSample(
 export async function batchUpdatePhase(
   sampleIds: string[],
   phaseName: string,
-  userId: string,
   userName: string,
   labId: string,
   options?: { experimentName?: string },
 ) {
-  const results = await prisma.$transaction(async (tx) => {
-    const updated: any[] = [];
-    for (const sampleId of sampleIds) {
-      const sample = await tx.sample.findUnique({ where: { id: sampleId, labId } });
-      if (!sample) continue;
-
-      const history = (sample.phaseHistory as any) || [];
-      const newPhase: PhaseEntry = {
-        phase: phaseName,
-        updatedBy: userName,
-        timestamp: new Date().toISOString(),
-        ...(options?.experimentName ? { experimentName: options.experimentName } : {}),
-      };
-      history.push(newPhase);
-
-      const updateData: Record<string, unknown> = {
-        currentPhase: phaseName,
-        phaseHistory: history,
-      };
-
-      if (phaseName === 'Experiment' && options?.experimentName) {
-        updateData.experimentType = options.experimentName;
-      }
-
-      const updatedSample = await tx.sample.update({
-        where: { id: sampleId, labId },
-        data: updateData,
-      });
-      updated.push(updatedSample);
-    }
-    return updated;
+  // 1 query: fetch current phaseHistory for all samples
+  const samples = await prisma.sample.findMany({
+    where: { id: { in: sampleIds }, labId },
+    select: { id: true, phaseHistory: true },
   });
+
+  const newPhaseEntry: PhaseEntry = {
+    phase: phaseName,
+    updatedBy: userName,
+    timestamp: new Date().toISOString(),
+    ...(options?.experimentName ? { experimentName: options.experimentName } : {}),
+  };
+
+  const updateData: Record<string, unknown> = {
+    currentPhase: phaseName,
+  };
+
+  if (phaseName === 'Experiment' && options?.experimentName) {
+    updateData.experimentType = options.experimentName;
+  }
+
+  // Build all update operations for a single transaction
+  const updates = samples.map((sample) => {
+    const history = parsePhaseHistory(sample.phaseHistory);
+    history.push(newPhaseEntry);
+    return prisma.sample.update({
+      where: { id: sample.id, labId },
+      data: { ...updateData, phaseHistory: history as unknown as Prisma.InputJsonValue },
+    });
+  });
+
+  // 1 transaction: batch all updates (still 1 query per sample, but no N+1 blocking)
+  const results = await prisma.$transaction(updates);
 
   return results;
 }

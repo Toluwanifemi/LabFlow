@@ -65,8 +65,6 @@ export function PhaseTracker({ sampleId, currentPhase, phaseHistory, experimentT
     }
   };
 
-  const canSubmit = !isExperimentSelected || (isExperimentSelected && experimentName.trim().length > 0);
-
   const formatPhaseForDisplay = (entry: PhaseEntry) => {
     if (entry.experimentName) return `Experiment — ${entry.experimentName}`;
     return entry.phase;

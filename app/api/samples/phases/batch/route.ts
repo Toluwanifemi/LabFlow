@@ -3,24 +3,22 @@ import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
 import { batchUpdatePhase } from '@/lib/db/phases';
 import { getSamplesByIds } from '@/lib/db/samples';
-import { getUserByEmailWithLab } from '@/lib/db/users';
 import { writeAuditLog } from '@/lib/db/audit';
 import { getIpAddress } from '@/lib/api/utils';
 
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id || !session?.user?.labId || !session?.user?.role) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await getUserByEmailWithLab(session.user.email);
+    const userId = session.user.id;
+    const userLabId = session.user.labId;
+    const userRole = session.user.role;
+    const userName = session.user.name || 'Unknown User';
 
-    if (!dbUser || !dbUser.isActive) {
-      return NextResponse.json({ error: 'User not found.' }, { status: 401 });
-    }
-
-    if (!canPerformAction(dbUser.role, 'update_phase')) {
+    if (!canPerformAction(userRole, 'update_phase')) {
       return NextResponse.json(
         { error: 'You do not have permission to perform this action.' },
         { status: 403 }
@@ -48,26 +46,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingSamples = await getSamplesByIds(sampleIds, dbUser.labId);
+    const existingSamples = await getSamplesByIds(sampleIds, userLabId);
+
+    if (existingSamples.length !== sampleIds.length) {
+      const foundIds = new Set(existingSamples.map((s) => s.id));
+      const missingIds = sampleIds.filter((id: string) => !foundIds.has(id));
+      return NextResponse.json(
+        { error: `This sample does not exist.`, missingIds },
+        { status: 400 }
+      );
+    }
+
     const oldPhaseMap = new Map(existingSamples.map((s) => [s.id, s.currentPhase]));
 
     const updated = await batchUpdatePhase(
-      sampleIds, phaseName.trim(), dbUser.id, dbUser.name, dbUser.labId,
+      sampleIds, phaseName.trim(), userName, userLabId,
       { experimentName: experimentName?.trim() },
     );
 
     const auditNewValue = experimentName?.trim() ? `Experiment — ${experimentName.trim()}` : phaseName.trim();
 
-    for (const sample of updated) {
-      await writeAuditLog({
-        userId: dbUser.id,
-        actionType: 'PHASE_CHANGE',
-        sampleId: sample.id,
-        fieldChanged: 'currentPhase',
-        oldValue: oldPhaseMap.get(sample.id) ?? null,
-        newValue: auditNewValue,
-        ipAddress: getIpAddress(req),
-      });
+    const auditResults = await Promise.allSettled(
+      updated.map((sample) =>
+        writeAuditLog({
+          userId,
+          actionType: 'PHASE_CHANGE',
+          sampleId: sample.id,
+          fieldChanged: 'currentPhase',
+          oldValue: oldPhaseMap.get(sample.id) ?? null,
+          newValue: auditNewValue,
+          ipAddress: getIpAddress(req),
+          labId: userLabId,
+        })
+      )
+    );
+    for (const r of auditResults) {
+      if (r.status === 'rejected') {
+        console.error('[POST /api/samples/phases/batch] Audit log write failed:', r.reason);
+      }
     }
 
     return NextResponse.json({ updated: updated.length }, { status: 200 });

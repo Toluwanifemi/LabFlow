@@ -7,7 +7,7 @@ import { rateLimit } from '@/lib/api/rate-limit';
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-    const limit = rateLimit(`forgot-password:${ip}`, 3, 60 * 1000);
+    const limit = await rateLimit(`forgot-password:${ip}`, 3, 60 * 1000);
     if (!limit.ok) return limit.response;
 
     const { email } = await req.json();

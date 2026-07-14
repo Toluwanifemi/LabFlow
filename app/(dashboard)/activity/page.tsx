@@ -45,39 +45,53 @@ export default async function ActivityPage(props: ActivityPageProps) {
       <header className={styles.header}>
         <h1 className={styles.title}>Audit Log</h1>
         <p className={styles.subtitle}>
-          Immutable record of all lab activities. Showing {totalCount === 0 ? 0 : (page - 1) * limit + 1}-{Math.min(page * limit, totalCount)} of {totalCount} entries.
+          Immutable record of all lab activities. {totalCount} entr{totalCount === 1 ? 'y' : 'ies'}.
         </p>
       </header>
 
       <ActivityLog logs={serializedLogs} />
 
-      {totalPages > 1 && (
+      {totalCount > limit && (
         <div className={styles.pagination}>
-          <Link
-            href={{
-              pathname: '/activity',
-              query: { page: Math.max(1, page - 1) },
-            }}
-            className={`${styles.pageBtn} ${page <= 1 ? styles.disabled : ''}`}
-            aria-disabled={page <= 1}
-            tabIndex={page <= 1 ? -1 : undefined}
-          >
-            &larr; Previous
-          </Link>
-          <span className={styles.pageInfo}>
-            Page {page} of {totalPages}
+          <span className={styles.paginationInfo}>
+            {(page - 1) * limit + 1} &mdash; {Math.min(page * limit, totalCount)} of {totalCount}
           </span>
-          <Link
-            href={{
-              pathname: '/activity',
-              query: { page: Math.min(totalPages, page + 1) },
-            }}
-            className={`${styles.pageBtn} ${page >= totalPages ? styles.disabled : ''}`}
-            aria-disabled={page >= totalPages}
-            tabIndex={page >= totalPages ? -1 : undefined}
-          >
-            Next &rarr;
-          </Link>
+          <div className={styles.paginationButtons}>
+            {page > 1 ? (
+              <Link
+                href={{ pathname: '/activity', query: { page: page - 1 } }}
+                className={styles.paginationBtn}
+                aria-label="Previous page"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </Link>
+            ) : (
+              <span className={`${styles.paginationBtn} ${styles.disabled}`} aria-hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </span>
+            )}
+            {page < totalPages ? (
+              <Link
+                href={{ pathname: '/activity', query: { page: page + 1 } }}
+                className={styles.paginationBtn}
+                aria-label="Next page"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
+            ) : (
+              <span className={`${styles.paginationBtn} ${styles.disabled}`} aria-hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { openDB } from 'idb';
 import { useToast } from './useToast';
 
@@ -7,13 +7,14 @@ const DB_NAME = 'labflow-sync';
 const STORE_NAME = 'sync-queue';
 
 export interface SyncAction {
-  id: string; // temporary local id
+  id: string;
   endpoint: string;
   method: 'POST' | 'PATCH' | 'DELETE';
   payload: any;
   timestamp: number;
   hasConflict?: boolean;
   conflictDetails?: string;
+  _retryCount?: number;
 }
 
 export function useSyncQueue() {
@@ -21,6 +22,8 @@ export function useSyncQueue() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
   const [conflicts, setConflicts] = useState<SyncAction[]>([]);
+  const retryAttemptRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { showToast } = useToast();
 
   const getDB = async () => {
@@ -70,13 +73,27 @@ export function useSyncQueue() {
     }
   };
 
+  const scheduleRetry = useCallback(() => {
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    const attempt = retryAttemptRef.current;
+    const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
+    retryAttemptRef.current = attempt + 1;
+    retryTimerRef.current = setTimeout(() => processQueue(), delay);
+  }, []);
+
   const processQueue = useCallback(async () => {
     if (!isOnline || isSyncing) return;
+
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
 
     // Check actual server reachability (patching leaky navigator.onLine API)
     const isReachable = await checkInternetConnection();
     if (!isReachable) {
       console.warn('[syncQueue] Local network connected, but server is unreachable. Skipping sync.');
+      scheduleRetry();
       return;
     }
 
@@ -90,12 +107,14 @@ export function useSyncQueue() {
 
       if (activeItems.length === 0) {
         setIsSyncing(false);
+        retryAttemptRef.current = 0;
         return;
       }
 
       activeItems.sort((a, b) => a.timestamp - b.timestamp);
 
       let successCount = 0;
+      let hadFailure = false;
       for (const item of activeItems) {
         try {
           const res = await fetch(item.endpoint, {
@@ -128,16 +147,22 @@ export function useSyncQueue() {
             });
           } else {
             console.error(`Sync failed for ${item.id}`, await res.text());
+            hadFailure = true;
           }
         } catch (fetchError) {
           console.error(`Network error syncing ${item.id}`, fetchError);
-          continue; // Skip failed item, retry on next sync pass
+          hadFailure = true;
         }
       }
 
       await updateQueueCount();
       if (successCount > 0) {
+        retryAttemptRef.current = 0;
         showToast({ message: `Synced ${successCount} records.`, type: 'success' });
+      }
+
+      if (hadFailure) {
+        scheduleRetry();
       }
 
       // Retry any pending QR code generations after sync
@@ -148,10 +173,11 @@ export function useSyncQueue() {
       }
     } catch (error) {
       console.error('Sync process failed', error);
+      scheduleRetry();
     } finally {
       setIsSyncing(false);
     }
-  }, [isOnline, isSyncing, showToast, updateQueueCount]);
+  }, [isOnline, isSyncing, showToast, updateQueueCount, scheduleRetry]);
 
   const discardConflict = async (id: string) => {
     try {
@@ -204,6 +230,7 @@ export function useSyncQueue() {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, [processQueue, updateQueueCount]);
 

@@ -1,46 +1,46 @@
 import { prisma } from './client';
-import { User, Role } from '@/types';
+import type { User, Role } from '@/types';
+import { toUser } from './mappers';
 
 export async function getUsersByLabId(labId: string): Promise<User[]> {
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: { labId, isActive: true },
     orderBy: { createdAt: 'desc' },
-  }) as unknown as Promise<User[]>;
-}
-
-export async function getTotalMembers(labId: string): Promise<number> {
-  return prisma.user.count({
-    where: { labId }
   });
+  return users.map(toUser);
 }
 
 export async function createUser(data: { name: string; email: string; passwordHash: string; role: Role; emailVerified?: Date }, labId: string): Promise<User> {
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       ...data,
       labId,
     },
-  }) as unknown as Promise<User>;
+  });
+  return toUser(user);
 }
 
 export async function updateUserRole(userId: string, role: Role, labId: string): Promise<User> {
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: userId, labId },
     data: { role },
-  }) as unknown as Promise<User>;
+  });
+  return toUser(user);
 }
 
 export async function deactivateUser(userId: string, labId: string): Promise<User> {
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: userId, labId },
     data: { isActive: false },
-  }) as unknown as Promise<User>;
+  });
+  return toUser(user);
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email },
-  }) as unknown as Promise<User | null>;
+  });
+  return user ? toUser(user) : null;
 }
 
 export async function getUserByEmailWithLab(email: string) {
@@ -63,8 +63,8 @@ export async function createVerificationToken(email: string, token: string, expi
 }
 
 export async function getUserByEmailInsensitive(email: string) {
-  return prisma.user.findFirst({
-    where: { email: { equals: email, mode: 'insensitive' } },
+  return prisma.user.findUnique({
+    where: { email },
   });
 }
 

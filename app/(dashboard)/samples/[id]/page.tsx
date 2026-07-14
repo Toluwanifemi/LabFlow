@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { auth } from '@/lib/auth/config';
-import { getSampleById, getSampleBySlug, updateSampleQR, getSampleParent } from '@/lib/db/samples';
+import { getSampleById, getSampleBySlug, updateSampleQR } from '@/lib/db/samples';
+import { prisma } from '@/lib/db/client';
 import { getChildSamples } from '@/lib/db/replicates';
 import { notFound } from 'next/navigation';
+import { parsePhaseHistory, parseImages } from '@/types';
 import { SampleDetail } from '@/components/samples/SampleDetail';
 import { ImageAttachment } from '@/components/samples/ImageAttachment';
 import { generateQRCodeUrl } from '@/lib/qr/goqr';
@@ -19,11 +21,15 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
     if (!sample) return notFound();
   }
 
-  const childSamples = await getChildSamples(sample.id, session.user.labId, 50);
-
-  const parentSample = sample.parentSampleId
-    ? await getSampleParent(sample.id, session.user.labId)
-    : null;
+  const [childSamples, parentSample] = await Promise.all([
+    getChildSamples(sample.id, session.user.labId, 50),
+    sample.parentSampleId
+      ? prisma.sample.findUnique({
+          where: { id: sample.parentSampleId },
+          select: { id: true, humanId: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
   if (!sample.qrCodeUrl) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -46,7 +52,7 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
     description: sample.description,
     experimentType: sample.experimentType,
     currentPhase: sample.currentPhase,
-    phaseHistory: (sample.phaseHistory as any) || [],
+    phaseHistory: parsePhaseHistory(sample.phaseHistory),
     qrCodeUrl: sample.qrCodeUrl,
     createdBy: {
       name: sample.createdBy.name,
@@ -83,7 +89,7 @@ export default async function SampleDetailPage(props: { params: Promise<{ id: st
 
       <ImageAttachment
         sampleId={sample.id}
-        images={(sample.images as any) || []}
+        images={parseImages(sample.images)}
       />
     </div>
   );

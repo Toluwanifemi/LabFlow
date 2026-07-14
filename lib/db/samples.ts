@@ -107,18 +107,6 @@ export async function getSamplesWithoutQR(labId: string) {
   });
 }
 
-export async function getSampleParent(sampleId: string, labId: string) {
-  const sample = await prisma.sample.findUnique({
-    where: { id: sampleId, labId },
-    select: { parentSampleId: true },
-  });
-  if (!sample?.parentSampleId) return null;
-  return prisma.sample.findUnique({
-    where: { id: sample.parentSampleId },
-    select: { id: true, humanId: true },
-  });
-}
-
 const VALID_PHASES = [
   'COLLECTION',
   'INDUCTION',
@@ -222,61 +210,12 @@ export async function querySamples(
   return { samples, total };
 }
 
-export async function searchSamples(labId: string, query: string, page = 1, limit = 25) {
-  const skip = (page - 1) * limit;
-  const phaseTypeEnumMatches = VALID_PHASES.filter((val) =>
-    val.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const orConditions: any[] = [
-    { humanId: { contains: query, mode: 'insensitive' } },
-    { sampleType: { contains: query, mode: 'insensitive' } },
-    { source: { contains: query, mode: 'insensitive' } },
-    { experimentType: { contains: query, mode: 'insensitive' } },
-    { createdBy: { name: { contains: query, mode: 'insensitive' } } },
-  ];
-
-  if (phaseTypeEnumMatches.length > 0) {
-    orConditions.push({ currentPhase: { in: phaseTypeEnumMatches } });
-  }
-
-  return prisma.sample.findMany({
-    where: {
-      labId,
-      isDeleted: false,
-      OR: orConditions,
-    },
-    include: { createdBy: { select: { name: true } } },
-    orderBy: { createdAt: 'desc' },
-    skip,
-    take: limit,
+export async function checkSlugExistsGlobally(slug: string): Promise<boolean> {
+  const existing = await prisma.sample.findUnique({
+    where: { slug },
+    select: { id: true },
   });
-}
-
-export async function searchSamplesCount(labId: string, query: string): Promise<number> {
-  const phaseTypeEnumMatches = VALID_PHASES.filter((val) =>
-    val.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const orConditions: any[] = [
-    { humanId: { contains: query, mode: 'insensitive' } },
-    { sampleType: { contains: query, mode: 'insensitive' } },
-    { source: { contains: query, mode: 'insensitive' } },
-    { experimentType: { contains: query, mode: 'insensitive' } },
-    { createdBy: { name: { contains: query, mode: 'insensitive' } } },
-  ];
-
-  if (phaseTypeEnumMatches.length > 0) {
-    orConditions.push({ currentPhase: { in: phaseTypeEnumMatches } });
-  }
-
-  return prisma.sample.count({
-    where: {
-      labId,
-      isDeleted: false,
-      OR: orConditions,
-    },
-  });
+  return !!existing;
 }
 
 

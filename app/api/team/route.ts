@@ -7,10 +7,9 @@ import { createMemberSchema, updateRoleSchema, removeMemberSchema } from '@/lib/
 import { sendInviteEmail } from '@/lib/email/mailer';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { Role } from '@/types';
 import { getIpAddress } from '@/lib/api/utils';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
@@ -85,6 +84,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Generate verification token and send invite email
+    let emailSent = false;
     try {
       const token = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
@@ -92,14 +92,13 @@ export async function POST(req: NextRequest) {
       await createVerificationToken(data.email, token, expiresAt);
 
       const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth?mode=verify&token=${token}`;
-      sendInviteEmail(data.email, data.name, session.user.labName || 'your lab', session.user.name || 'An admin', verifyUrl).catch((emailErr) => {
-        console.error('[POST /api/team] Failed to send invite email:', emailErr);
-      });
+      await sendInviteEmail(data.email, data.name, session.user.labName || 'your lab', session.user.name || 'An admin', verifyUrl);
+      emailSent = true;
     } catch (err) {
-      console.error('[POST /api/team] Failed to generate verify token:', err);
+      console.error('[POST /api/team] Failed to send invite email:', err);
     }
 
-    return NextResponse.json(safeUser, { status: 201 });
+    return NextResponse.json({ ...safeUser, emailSent }, { status: 201 });
 
   } catch (error) {
     console.error('[POST /api/team]', error);
@@ -140,6 +139,7 @@ export async function PATCH(req: NextRequest) {
         oldValue: oldRole,
         newValue: data.role,
         ipAddress: getIpAddress(req),
+        labId: session.user.labId,
       });
     }
 
@@ -198,6 +198,7 @@ export async function DELETE(req: NextRequest) {
       oldValue: 'true',
       newValue: 'false',
       ipAddress: getIpAddress(req),
+      labId: session.user.labId,
     });
 
     return NextResponse.json({ success: true }, { status: 200 });

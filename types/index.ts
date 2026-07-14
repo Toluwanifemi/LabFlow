@@ -22,10 +22,6 @@ export type Action =
   | 'manage_roles'
   | 'edit_lab_settings';
 
-export type SampleType = string;
-export type Group = 'CONTROL' | 'NMU' | 'TREATMENT';
-export type Sex = 'MALE' | 'FEMALE';
-export type PhaseType = string;
 
 
 export interface PhaseEntry {
@@ -42,46 +38,24 @@ export interface ImageEntry {
   url: string;
 }
 
-export interface Sample {
+export interface SampleSummary {
   id: string;
   slug: string;
   humanId: string;
-  qrCodeUrl: string | null;
-  sampleType: SampleType;
+  sampleType: string;
   source: string;
-  collectionDate: string;        // ISO date string
-  description: string | null;
-  experimentType: string | null;
-  currentPhase: PhaseType | null;
-  phaseHistory: PhaseEntry[];
-  images: ImageEntry[];
+  collectionDate: string;
+  currentPhase: string | null;
   createdById: string;
   createdAt: string;
   updatedAt: string;
   isDeleted: boolean;
-  deletedAt: string | null;
-  deletedById: string | null;
   labId: string;
-
-  // Expanded fields
-  parentSampleId: string | null;
-  group: Group | null;
-  sex: Sex | null;
-  age: number | null;
-
+  images: ImageEntry[];
+  description: string | null;
 }
 
-export interface AuditLogEntry {
-  id: string;
-  userId: string;
-  actionType: ActionType;
-  sampleId: string;
-  fieldChanged: string | null;
-  oldValue: string | null;
-  newValue: string | null;
-  timestamp: string;
-  ipAddress: string;
-}
+
 
 export interface User {
   id: string;
@@ -103,13 +77,23 @@ export interface Lab {
   createdAt: string;
 }
 
-export interface GoQRReadSymbol {
-  seq: number;
-  data: string | null;
-  error: string | null;
+export function parsePhaseHistory(value: unknown): PhaseEntry[] {
+  if (!value || !Array.isArray(value)) return [];
+  return value.map((item: any) => ({
+    phase: String(item?.phase ?? ''),
+    updatedBy: String(item?.updatedBy ?? ''),
+    timestamp: String(item?.timestamp ?? ''),
+    ...(item?.experimentName ? { experimentName: String(item.experimentName) } : {}),
+  }));
 }
 
-export interface GoQRReadResponse {
-  type: string;
-  symbol: GoQRReadSymbol[];
+export function parseImages(value: unknown): ImageEntry[] {
+  if (!value || !Array.isArray(value)) return [];
+  return value.map((item: any) => ({
+    filename: String(item?.filename ?? ''),
+    uploaderId: String(item?.uploaderId ?? ''),
+    uploadTimestamp: String(item?.uploadTimestamp ?? ''),
+    url: String(item?.url ?? ''),
+  }));
 }
+

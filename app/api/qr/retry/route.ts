@@ -3,10 +3,10 @@ import { auth } from '@/lib/auth/config';
 import { getSamplesWithoutQR, updateSampleQR } from '@/lib/db/samples';
 import { generateQRCodeUrl } from '@/lib/qr/goqr';
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id || !session?.user?.labId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,18 +16,22 @@ export async function POST(req: NextRequest) {
     let failed = 0;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    await Promise.all(
-      samples.map(async (sample) => {
-        try {
-          const qrCodeUrl = await generateQRCodeUrl(`${appUrl}/samples/${sample.id}`);
-          await updateSampleQR(sample.id, qrCodeUrl, session.user.labId);
-          retried++;
-        } catch (err) {
-          console.error(`[POST /api/qr/retry] QR generation failed for sample ${sample.id}:`, err);
-          failed++;
-        }
-      })
-    );
+    const batchSize = 5;
+    for (let i = 0; i < samples.length; i += batchSize) {
+      const batch = samples.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(async (sample) => {
+          try {
+            const qrCodeUrl = generateQRCodeUrl(`${appUrl}/samples/${sample.id}`);
+            await updateSampleQR(sample.id, qrCodeUrl, session.user.labId);
+            retried++;
+          } catch (err) {
+            console.error(`[POST /api/qr/retry] QR update failed for sample ${sample.id}:`, err);
+            failed++;
+          }
+        })
+      );
+    }
 
     return NextResponse.json({ retried, failed, total: samples.length }, { status: 200 });
   } catch (error) {

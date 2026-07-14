@@ -1,5 +1,4 @@
 'use client';
-import Link from 'next/link';
 import styles from '../landing.module.css';
 
 export function FooterSection() {

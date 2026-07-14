@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { canPerformAction } from '@/lib/auth/permissions';
-import { createSample, getNextSampleSequence, updateSampleQR, getSamplesForLab, getSamplesCountForLab, getSampleByHumanId, getSampleBySlug, querySamples } from '@/lib/db/samples';
+import { createSample, getNextSampleSequence, updateSampleQR, getSampleByHumanId, querySamples, checkSlugExistsGlobally } from '@/lib/db/samples';
 import { createReplicates } from '@/lib/db/replicates';
 import { writeAuditLog } from '@/lib/db/audit';
-import { getUserByEmailWithLab } from '@/lib/db/users';
 import { createSampleSchema } from '@/lib/validators/sample';
 import { generateHumanId, generateSlug, generateSlugWithFallback } from '@/lib/id/generateId';
 import { generateQRCodeUrl } from '@/lib/qr/goqr';
@@ -13,17 +12,14 @@ import { getIpAddress } from '@/lib/api/utils';
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id || !session?.user?.labId || !session?.user?.role) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await getUserByEmailWithLab(session.user.email);
-
-    if (!dbUser || !dbUser.isActive) {
-      return NextResponse.json({ error: 'User not found.' }, { status: 401 });
-    }
-
-    if (!canPerformAction(dbUser.role, 'create_sample')) {
+    const userId = session.user.id;
+    const userLabId = session.user.labId;
+    const userRole = session.user.role;
+    if (!canPerformAction(userRole as any, 'create_sample')) {
       return NextResponse.json(
         { error: 'You do not have permission to perform this action.' },
         { status: 403 }
@@ -42,17 +38,17 @@ export async function POST(req: NextRequest) {
     const { childCount, parentHumanId: _parentHumanId, ...dbData } = data;
 
     if (childCount && childCount > 1) {
-      let replicates: any[];
+      let replicates: any[] = [];
       let replicateAttempts = 0;
       const maxReplicateAttempts = 3;
       while (replicateAttempts < maxReplicateAttempts) {
         try {
-          const seq = await getNextSampleSequence(dbUser.labId, dbData.sampleType);
+          const seq = await getNextSampleSequence(userLabId, dbData.sampleType);
           const baseHumanId = generateHumanId(dbData.sampleType, seq);
           const baseSlug = generateSlug(dbData.sampleType, baseHumanId);
 
           replicates = await createReplicates(
-            baseHumanId, baseSlug, childCount, dbData, dbUser.id, dbUser.labId,
+            baseHumanId, baseSlug, childCount, dbData, userId, userLabId,
           );
           break;
         } catch (err: unknown) {
@@ -70,22 +66,19 @@ export async function POST(req: NextRequest) {
       }
 
       for (const r of replicates!) {
-        await writeAuditLog({ userId: dbUser.id, actionType: 'CREATE', sampleId: r.id, ipAddress: getIpAddress(req) });
+        await writeAuditLog({ userId, actionType: 'CREATE', sampleId: r.id, ipAddress: getIpAddress(req), labId: userLabId });
       }
 
-      const parent = replicates![0];
+      const parent = replicates[0];
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       try {
-        const qrCodeUrl = await Promise.race([
-          generateQRCodeUrl(`${appUrl}/samples/${parent.id}`),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('QR Timeout')), 1500)),
-        ]);
-        await updateSampleQR(parent.id, qrCodeUrl, dbUser.labId);
+        const qrCodeUrl = generateQRCodeUrl(`${appUrl}/samples/${parent.id}`);
+        await updateSampleQR(parent.id, qrCodeUrl, userLabId);
       } catch (err) {
         console.error('[POST /api/samples] QR generation failed for parent:', err);
       }
 
-      return NextResponse.json({ parent, children: replicates!.slice(1) }, { status: 201 });
+      return NextResponse.json({ parent, children: replicates.slice(1) }, { status: 201 });
     }
 
     let sample;
@@ -93,21 +86,21 @@ export async function POST(req: NextRequest) {
     const maxAttempts = 3;
     while (attempts < maxAttempts) {
       try {
-        const seq = await getNextSampleSequence(dbUser.labId, dbData.sampleType);
+        const seq = await getNextSampleSequence(userLabId, dbData.sampleType);
         const humanId = generateHumanId(dbData.sampleType, seq);
 
         let slug = generateSlug(dbData.sampleType, humanId);
         let slugAttempts = 0;
         while (slugAttempts < 3) {
-          const existingSlug = await getSampleBySlug(slug, dbUser.labId);
-          if (!existingSlug) break;
+          const slugExists = await checkSlugExistsGlobally(slug);
+          if (!slugExists) break;
           slug = slugAttempts === 0
             ? generateSlugWithFallback(dbData.sampleType, humanId)
             : generateSlugWithFallback(dbData.sampleType, humanId) + '-' + Math.random().toString(36).slice(2, 5);
           slugAttempts++;
         }
 
-        sample = await createSample(dbData, dbUser.id, dbUser.labId, slug, humanId);
+        sample = await createSample(dbData, userId, userLabId, slug, humanId);
         break;
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
@@ -125,22 +118,17 @@ export async function POST(req: NextRequest) {
     }
 
     await writeAuditLog({
-      userId: dbUser.id,
+      userId,
       actionType: 'CREATE',
       sampleId: sample.id,
       ipAddress: getIpAddress(req),
+      labId: userLabId,
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     try {
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('QR Generation Timeout')), 1500)
-      );
-      const qrCodeUrl = await Promise.race([
-        generateQRCodeUrl(`${appUrl}/samples/${sample.id}`),
-        timeoutPromise,
-      ]);
-      const updatedSample = await updateSampleQR(sample.id, qrCodeUrl, dbUser.labId);
+      const qrCodeUrl = generateQRCodeUrl(`${appUrl}/samples/${sample.id}`);
+      const updatedSample = await updateSampleQR(sample.id, qrCodeUrl, userLabId);
       sample = updatedSample;
     } catch (err) {
       console.error('[POST /api/samples] QR generation failed during sync create:', err);
@@ -160,17 +148,14 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id || !session?.user?.labId || !session?.user?.role) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await getUserByEmailWithLab(session.user.email);
+    const userLabId = session.user.labId;
+    const userRole = session.user.role;
 
-    if (!dbUser || !dbUser.isActive) {
-      return NextResponse.json({ error: 'User not found.' }, { status: 401 });
-    }
-
-    if (!canPerformAction(dbUser.role, 'view_all_samples') && !canPerformAction(dbUser.role, 'view_own_samples')) {
+    if (!canPerformAction(userRole as any, 'view_all_samples') && !canPerformAction(userRole as any, 'view_own_samples')) {
       return NextResponse.json(
         { error: 'You do not have permission to view samples.' },
         { status: 403 }
@@ -181,7 +166,7 @@ export async function GET(req: NextRequest) {
     const humanIdParam = searchParams.get('humanId');
 
     if (humanIdParam) {
-      const sample = await getSampleByHumanId(humanIdParam, dbUser.labId);
+      const sample = await getSampleByHumanId(humanIdParam, userLabId);
       if (!sample) {
         return NextResponse.json({ error: 'This sample does not exist.' }, { status: 404 });
       }
@@ -196,7 +181,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
     const attention = searchParams.get('attention') || undefined;
 
-    const { samples, total } = await querySamples(dbUser.labId, {
+    const { samples, total } = await querySamples(userLabId, {
       q,
       sampleType,
       sort,

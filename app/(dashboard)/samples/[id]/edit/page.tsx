@@ -4,14 +4,12 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/hooks/useToast';
-import { usePermissions } from '@/hooks/usePermissions';
 import styles from './edit.module.css';
 
 export default function EditSamplePage() {
   const params = useParams();
   const router = useRouter();
   const { showToast } = useToast();
-  const { hasPermission } = usePermissions();
 
   const [formData, setFormData] = useState({
     sampleType: '',

@@ -1,5 +1,5 @@
 .wrapper {
-  background-color: var(--color-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-outline-variant);
   border-radius: 12px;
   overflow-x: auto;
@@ -12,16 +12,23 @@
   font-size: var(--typography-body-medium-font-size, 14px);
 }
 
-.table th, .table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--color-outline-variant);
+.table th {
+  padding: 12px 14px;
+  font-weight: 600;
+  font-size: var(--typography-label-medium-font-size, 13px);
+  color: var(--color-on-surface-variant);
+  border-bottom: 2px solid var(--color-outline-variant);
+  background-color: var(--color-surface);
+  white-space: nowrap;
 }
 
-.table th {
-  font-size: var(--typography-label-medium-font-size, 12px);
-  text-transform: uppercase;
-  color: var(--color-on-surface-variant);
-  font-weight: 500;
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-outline-variant);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
   background-color: var(--color-surface-variant);
 }
 
