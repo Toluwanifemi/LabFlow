@@ -39,6 +39,20 @@
   color: var(--color-primary);
 }
 
+.logoLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoImage {
+  width: auto;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
 .logoText {
   font-size: var(--typography-title-large-font-size, 22px);
   font-weight: bold;

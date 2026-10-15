@@ -21,9 +21,6 @@ export default auth((req) => {
   }
 
   if (isLandingPage) {
-    if (isLoggedIn) {
-      return NextResponse.redirect(new URL('/dashboard', req.nextUrl));
-    }
     return NextResponse.next();
   }
 
@@ -35,5 +32,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|otf)).*)'],
 };

@@ -129,7 +129,14 @@ export function SidebarNav({ menuOpen, onClose }: { menuOpen?: boolean; onClose?
       {/* Desktop sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.logoArea}>
-          <Link href="/" className={styles.logoText}>LabFlow</Link>
+          <Link href="/" className={styles.logoLink}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/labflow-logo.png"
+              alt="Labflow"
+              className={styles.logoImage}
+            />
+          </Link>
         </div>
         <nav className={styles.navDesktop}>
           {renderLinks()}
@@ -141,7 +148,14 @@ export function SidebarNav({ menuOpen, onClose }: { menuOpen?: boolean; onClose?
         <div className={styles.overlay} onClick={onClose}>
           <aside className={styles.mobileDrawer} onClick={e => e.stopPropagation()}>
             <div className={styles.drawerHeader}>
-              <Link href="/" className={styles.logoText}>LabFlow</Link>
+              <Link href="/" className={styles.logoLink}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/labflow-logo.png"
+                  alt="Labflow"
+                  className={styles.logoImage}
+                />
+              </Link>
               <button className={styles.closeBtn} onClick={onClose} aria-label="Close menu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />

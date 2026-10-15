@@ -40,7 +40,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className={styles.section}>
+    <section id="how-it-works" className={styles.section}>
       <div className={`${styles.sectionHeader} ${styles.reveal}`}>
         <h2 className={styles.sectionTitle}>Three steps to lab compliance</h2>
         <p className={styles.sectionSubtitle}>

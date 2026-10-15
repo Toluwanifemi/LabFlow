@@ -22,23 +22,6 @@ export function HeroSection() {
                 <polyline points="12 5 19 12 12 19" />
               </svg>
             </Link>
-            <Link href="#features" className={styles.ctaSecondary}>
-              See How It Works
-            </Link>
-          </div>
-          <div className={`${styles.heroStats} ${styles.reveal} ${styles.stagger3}`}>
-            <div className={styles.heroStat}>
-              <span className={styles.heroStatValue}>1,200+</span>
-              <span className={styles.heroStatLabel}>samples logged</span>
-            </div>
-            <div className={styles.heroStat}>
-              <span className={styles.heroStatValue}>50+</span>
-              <span className={styles.heroStatLabel}>active labs</span>
-            </div>
-            <div className={styles.heroStat}>
-              <span className={styles.heroStatValue}>99.9%</span>
-              <span className={styles.heroStatLabel}>uptime</span>
-            </div>
           </div>
         </div>
       </div>
